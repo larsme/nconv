@@ -128,6 +128,7 @@ class KittiDepthTrainer(Trainer):
 
     def evaluate(self):
         print('< Evaluate mode ! >')
+        print('#############################\n### Experiment Parameters ###\n#############################')
        
         # Load last save checkpoint
         if self.use_load_checkpoint != None:
