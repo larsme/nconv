@@ -8,6 +8,7 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 from trainers.trainer import Trainer # from CVLPyDL repo
 import torch
+import numpy as np
 
 import matplotlib.pyplot as plt
 import os.path
@@ -41,7 +42,7 @@ class KittiDepthTrainer(Trainer):
    
 ####### Training Function #######
 
-    def train(self, max_epochs):
+    def train(self):
         print('#############################\n### Experiment Parameters ###\n#############################')
         for k, v in self.params.items(): print('{0:<22s} : {1:}'.format(k,v))
                                                 
@@ -56,7 +57,7 @@ class KittiDepthTrainer(Trainer):
                 if self.load_checkpoint():
                     print('Checkpoint was loaded successfully!\n')
 
-        for epoch in range(self.epoch, max_epochs+1): # range function returns max_epochs-1
+        for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
             self.epoch = epoch
                                    
             # Decay Learning Rate 
@@ -84,6 +85,62 @@ class KittiDepthTrainer(Trainer):
             
         return self.net
 
+    def return_one_prediction(self, inputs_d, inputs_rgb):
+        # define the certainty
+
+        inputs_d = np.array(inputs_d, dtype=np.float16)
+        inputs_c = (inputs_d > 0).astype(float)
+
+        # Normalize the data
+        inputs_d = inputs_d / self.params['data_normalize_factor'] # [0,1]
+
+        # Expand dims into Pytorch format
+        inputs_d = np.expand_dims(inputs_d, 0)
+        inputs_c = np.expand_dims(inputs_c, 0)
+        inputs_d = np.expand_dims(inputs_d, 0)
+        inputs_c = np.expand_dims(inputs_c, 0)
+
+        # Convert to Pytorch Tensors
+        inputs_d = torch.tensor(inputs_d, dtype=torch.float)
+        inputs_c = torch.tensor(inputs_c, dtype=torch.float)
+
+        # Convert depth to disparity
+        if self.params['invert_depth']:
+            inputs_d[inputs_d == 0] = -1
+            data = 1 / inputs_d
+            data[data == -1] = 0
+
+        # Convert RGB image to tensor
+        if self.load_rgb:
+            inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
+            inputs_rgb /= 255
+            inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
+            inputs_rgb = np.expand_dims(inputs_rgb, 0)
+            inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
+
+
+        device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+
+        inputs_d = inputs_d.to(device)
+        inputs_c = inputs_c.to(device)
+        inputs_rgb = inputs_rgb.to(device)
+
+
+        with torch.no_grad():
+            outputs_d, outputs_c = self.net(inputs_d, inputs_c, inputs_rgb)
+
+            # Convert data to depth in meters before error metrics
+            # outputs_d[outputs_d==0] = -1
+            if not self.params['load_rgb']:
+                outputs_d[outputs_d == outputs_d[0, 0, 0, 0]] = -1
+            if self.params['invert_depth']:
+                outputs_d = 1 / outputs_d
+            outputs_d[outputs_d == -1] = 0
+            outputs_d *= self.params['data_normalize_factor'] / 256
+
+        return np.squeeze(outputs_d.cpu().data.numpy()), np.squeeze(outputs_c.cpu().data.numpy())
+
+
     def train_epoch(self):
         device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
         
@@ -101,7 +158,7 @@ class KittiDepthTrainer(Trainer):
                 else:
                     inputs_d, C, labels, item_idxs = data
                     inputs_d=inputs_d.to(device) ; C=C.to(device)
-                    labels=labels.to(device) 
+                    labels=labels.to(device)
                     outputs, cout = self.net(inputs_d, C)                
                     
                 
@@ -168,6 +225,7 @@ class KittiDepthTrainer(Trainer):
                         inputs_d, C, labels, item_idxs, inputs_rgb = data
                         inputs_d=inputs_d.to(device) ; C=C.to(device)
                         labels=labels.to(device) ; inputs_rgb= inputs_rgb.to(device)
+                        print(np.shape(inputs_rgb))
                         outputs, cout = self.net(inputs_d, C, inputs_rgb)
                     else:
                         inputs_d, C, labels, item_idxs = data

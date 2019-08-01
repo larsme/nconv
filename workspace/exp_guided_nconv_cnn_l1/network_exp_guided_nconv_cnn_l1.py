@@ -13,18 +13,20 @@ import numpy as np
 import math
 import importlib
 import sys
+import os as os
 
 
 class CNN(nn.Module):
 
     def __init__(self, pos_fn=None):
-        super().__init__() 
-        
+        super().__init__()
+
+        dir = os.path.dirname(os.path.abspath(__file__))
         # Import the unguided network
-        sys.path.append('workspace/exp_guided_nconv_cnn_l1/unguided_network_pretrained')
+        sys.path.append(dir+'/unguided_network_pretrained')
         f = importlib.import_module('unguided_network')
         self.d_net = f.CNN()
-        checkpoint_dict = torch.load('workspace/exp_guided_nconv_cnn_l1/unguided_network_pretrained/CNN_ep0005.pth.tar')
+        checkpoint_dict = torch.load(dir+'/unguided_network_pretrained/CNN_ep0005.pth.tar')
         self.d_net.load_state_dict(checkpoint_dict['net'])
         
         # Disable Training for the unguided module

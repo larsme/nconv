@@ -10,12 +10,12 @@ import os
 import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
-from dataloader.KittiDepthDataset import KittiDepthDataset
+from KittiDepthDataset import KittiDepthDataset
 
 def KittiDepthDataloader(params):
     
     # Input images are 16-bit, but only 15-bits are utilized, so we normalized the data to [0:1] using a normalization factor 
-    norm_factor  = params['data_normalize_factor']
+    norm_factor = params['data_normalize_factor']
     invert_depth = params['invert_depth']
     kitti_depth_dir = params['kitti_depth_dataset_dir']
     kitti_rgb_dir = params['kitti_rgb_dataset_dir'] if 'i_rgb_dataset_dir' in params else None
