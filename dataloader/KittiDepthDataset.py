@@ -68,12 +68,12 @@ class KittiDepthDataset(Dataset):
         # Read RGB images 
         if self.load_rgb:
             if self.setname=='train' or  self.setname=='val':
-                gt_path = str(self.gt[item])
-                idx = gt_path.find('2011')
-                day_dir = gt_path[idx:idx+10]
-                idx2 = gt_path.find('groundtruth')
-                fname = gt_path[idx2+12:]
-                rgb_path = self.rgb_dir + '/' + day_dir + '/' + gt_path[idx:idx+26] + '/' + fname[:8] + '/data/' + fname[9:]
+                s = (self.gt[item].split(self.setname)[1]).split('/')
+                drive_dir = s[1]
+                day_dir = drive_dir.split('_drive')[0]
+                img_source_dir = s[4]
+                img_idx_dir = s[5]
+                rgb_path = self.rgb_dir + '/' + day_dir + '/' + drive_dir + '/' + img_source_dir + '/data/' + img_idx_dir
                 rgb = Image.open(rgb_path)
             elif self.setname == 'selval':
                 data_path = str(self.data[item])

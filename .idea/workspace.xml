@@ -2,18 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/nconv_commands.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run_nconv_cnn.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/nconv.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/nconv.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dataloader/KittiDepthDataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/KittiDepthDataloader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run-nconv-cnn.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l1/network_exp_guided_nconv_cnn_l1.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l1/network_exp_guided_nconv_cnn_l1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l1/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l1/params.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -27,11 +16,12 @@
   <component name="ProjectId" id="1Oggb7r8ZdjQ5Mc6M0vf98E3yDU" />
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>

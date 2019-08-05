@@ -88,15 +88,19 @@ class KittiDepthTrainer(Trainer):
     def return_one_prediction(self, inputs_d, inputs_rgb):
         # define the certainty
 
+        assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) == 1216
+
         inputs_d = np.array(inputs_d, dtype=np.float16)
+        inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
         inputs_c = (inputs_d > 0).astype(float)
 
         # Normalize the data
         inputs_d = inputs_d / self.params['data_normalize_factor'] # [0,1]
 
         # Expand dims into Pytorch format
-        inputs_d = np.expand_dims(inputs_d, 0)
-        inputs_c = np.expand_dims(inputs_c, 0)
+        if np.ndim(inputs_d) == 2:
+            inputs_d = np.expand_dims(inputs_d, 0)
+            inputs_c = np.expand_dims(inputs_c, 0)
         inputs_d = np.expand_dims(inputs_d, 0)
         inputs_c = np.expand_dims(inputs_c, 0)
 
@@ -114,6 +118,12 @@ class KittiDepthTrainer(Trainer):
         if self.load_rgb:
             inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
             inputs_rgb /= 255
+            if np.ndim(inputs_rgb) == 3:
+                inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
+                inputs_rgb = np.expand_dims(inputs_rgb, 0)
+                print(np.shape(inputs_rgb))
+            else:
+                inputs_rgb = np.transpose(inputs_rgb, (0, 3, 1, 2))
             inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
             inputs_rgb = np.expand_dims(inputs_rgb, 0)
             inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
@@ -123,15 +133,21 @@ class KittiDepthTrainer(Trainer):
 
         inputs_d = inputs_d.to(device)
         inputs_c = inputs_c.to(device)
-        inputs_rgb = inputs_rgb.to(device)
+
+        if self.load_rgb:
+            inputs_rgb = inputs_rgb.to(device)
 
 
         with torch.no_grad():
-            outputs_d, outputs_c = self.net(inputs_d, inputs_c, inputs_rgb)
+
+            if self.load_rgb:
+                outputs_d, outputs_c = self.net(inputs_d, inputs_c, inputs_rgb)
+            else:
+                outputs_d, outputs_c = self.net(inputs_d, inputs_c)
 
             # Convert data to depth in meters before error metrics
             # outputs_d[outputs_d==0] = -1
-            if not self.params['load_rgb']:
+            if not self.load_rgb:
                 outputs_d[outputs_d == outputs_d[0, 0, 0, 0]] = -1
             if self.params['invert_depth']:
                 outputs_d = 1 / outputs_d

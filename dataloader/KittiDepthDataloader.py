@@ -18,7 +18,7 @@ def KittiDepthDataloader(params):
     norm_factor = params['data_normalize_factor']
     invert_depth = params['invert_depth']
     kitti_depth_dir = params['kitti_depth_dataset_dir']
-    kitti_rgb_dir = params['kitti_rgb_dataset_dir'] if 'i_rgb_dataset_dir' in params else None
+    kitti_rgb_dir = params['kitti_rgb_dataset_dir'] if 'kitti_rgb_dataset_dir' in params else None
     load_rgb = params['load_rgb'] if 'load_rgb' in params else False 
     rgb2gray = params['rgb2gray'] if 'rgb2gray' in params else False 
           
