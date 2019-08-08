@@ -6,22 +6,27 @@ __maintainer__ = "Abdelrahman Eldesokey"
 __email__ = "abdo.eldesokey@gmail.com"
 ########################################
 
-from trainers.trainer import Trainer # from CVLPyDL repo
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR)
+from trainer import Trainer # from CVLPyDL repo
 import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
 import os.path
-from utils.AverageMeter import AverageMeter
-from utils.saveTensorToImages import saveTensorToImages
-from utils.error_metrics import MAE, RMSE, MRE, Deltas
+sys.path.append(os.path.join(BASE_DIR, '../utils'))
+from AverageMeter import AverageMeter
+from saveTensorToImages import saveTensorToImages
+from error_metrics import MAE, RMSE, MRE, Deltas
 
 err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
              workspace_dir, sets=['train', 'val'], use_load_checkpoint = None):
-        
+
         # Call the constructor of the parent class (trainer)
         super().__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'], workspace_dir=workspace_dir)
           
@@ -85,24 +90,28 @@ class KittiDepthTrainer(Trainer):
             
         return self.net
 
-    def return_one_prediction(self, inputs_d, inputs_rgb):
+    def return_one_prediction(self, inputs_d, inputs_rgb, original_width=None, original_height=None):
         # define the certainty
 
-        assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) == 1216
+
+        #assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) == 1216
 
         inputs_d = np.array(inputs_d, dtype=np.float16)
         inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
         inputs_c = (inputs_d > 0).astype(float)
 
-        # Normalize the data
+        # Normalize the sparse_depth
         inputs_d = inputs_d / self.params['data_normalize_factor'] # [0,1]
 
         # Expand dims into Pytorch format
         if np.ndim(inputs_d) == 2:
             inputs_d = np.expand_dims(inputs_d, 0)
             inputs_c = np.expand_dims(inputs_c, 0)
-        inputs_d = np.expand_dims(inputs_d, 0)
-        inputs_c = np.expand_dims(inputs_c, 0)
+            inputs_d = np.expand_dims(inputs_d, 0)
+            inputs_c = np.expand_dims(inputs_c, 0)
+        else:
+            inputs_d = np.expand_dims(inputs_d, 1)
+            inputs_c = np.expand_dims(inputs_c, 1)
 
         # Convert to Pytorch Tensors
         inputs_d = torch.tensor(inputs_d, dtype=torch.float)
@@ -121,11 +130,8 @@ class KittiDepthTrainer(Trainer):
             if np.ndim(inputs_rgb) == 3:
                 inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
                 inputs_rgb = np.expand_dims(inputs_rgb, 0)
-                print(np.shape(inputs_rgb))
             else:
                 inputs_rgb = np.transpose(inputs_rgb, (0, 3, 1, 2))
-            inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
-            inputs_rgb = np.expand_dims(inputs_rgb, 0)
             inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
 
 
@@ -145,13 +151,17 @@ class KittiDepthTrainer(Trainer):
             else:
                 outputs_d, outputs_c = self.net(inputs_d, inputs_c)
 
-            # Convert data to depth in meters before error metrics
+            # Convert sparse_depth to depth in meters before error metrics
             # outputs_d[outputs_d==0] = -1
-            if not self.load_rgb:
-                outputs_d[outputs_d == outputs_d[0, 0, 0, 0]] = -1
             if self.params['invert_depth']:
+                div0 = outputs_d == 0
+                outputs_d[div0] = -1
                 outputs_d = 1 / outputs_d
-            outputs_d[outputs_d == -1] = 0
+                outputs_d[div0] = np.max(outputs_d[not div0])
+            if original_width is not None and original_height is not None:
+                outputs_d = torch.nn.functional.interpolate(
+                    outputs_d, (original_height, original_width), mode="bilinear", align_corners=False)
+            outputs_d[outputs_d < 0] = 0
             outputs_d *= self.params['data_normalize_factor'] / 256
 
         return np.squeeze(outputs_d.cpu().data.numpy()), np.squeeze(outputs_c.cpu().data.numpy())
@@ -167,20 +177,20 @@ class KittiDepthTrainer(Trainer):
             # Iterate over data.
             for data in self.dataloaders[s]:
                 if self.load_rgb:
-                    inputs_d, C, labels, item_idxs, inputs_rgb = data
-                    inputs_d=inputs_d.to(device) ; C=C.to(device)
-                    labels=labels.to(device) ; inputs_rgb= inputs_rgb.to(device)
-                    outputs, cout = self.net(inputs_d, C, inputs_rgb)
+                    sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
+                    sparse_depth = sparse_depth.to(device)
+                    gt_depth = gt_depth.to(device)
+                    inputs_rgb = inputs_rgb.to(device)
+                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
+                                                                    inputs_rgb)
                 else:
-                    inputs_d, C, labels, item_idxs = data
-                    inputs_d=inputs_d.to(device) ; C=C.to(device)
-                    labels=labels.to(device)
-                    outputs, cout = self.net(inputs_d, C)                
-                    
-                
+                    sparse_depth, gt_depth, computed_depth, item_idxs = data
+                    sparse_depth = sparse_depth.to(device)
+                    gt_depth = gt_depth.to(device)
+                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
+
                 # Calculate loss for valid pixel in the ground truth
-                loss = self.objective(outputs, labels, cout, self.epoch)
-                              
+                loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
 
                 # backward + optimize only if in training phase
                 if s == 'train':                    
@@ -190,7 +200,7 @@ class KittiDepthTrainer(Trainer):
                 self.optimizer.zero_grad()
     
                 # statistics
-                loss_meter[s].update(loss.item(), inputs_d.size(0))
+                loss_meter[s].update(loss.item(), sparse_depth.size(0))
             
             print('[{}] Loss: {:.8f}'.format(s,  loss_meter[s].avg), end=' ')
 
@@ -238,52 +248,51 @@ class KittiDepthTrainer(Trainer):
                 for data in self.dataloaders[s]:
                     
                     if self.load_rgb:
-                        inputs_d, C, labels, item_idxs, inputs_rgb = data
-                        inputs_d=inputs_d.to(device) ; C=C.to(device)
-                        labels=labels.to(device) ; inputs_rgb= inputs_rgb.to(device)
-                        print(np.shape(inputs_rgb))
-                        outputs, cout = self.net(inputs_d, C, inputs_rgb)
+                        sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
+                        sparse_depth = sparse_depth.to(device)
+                        gt_depth = gt_depth.to(device)
+                        inputs_rgb = inputs_rgb.to(device)
+                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
                     else:
-                        inputs_d, C, labels, item_idxs = data
-                        inputs_d=inputs_d.to(device) ; C=C.to(device)
-                        labels=labels.to(device) 
-                        outputs, cout = self.net(inputs_d, C)   
+                        sparse_depth, gt_depth, computed_depth, item_idxs = data
+                        sparse_depth = sparse_depth.to(device)
+                        gt_depth = gt_depth.to(device)
+                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
                                     
                     
                     # Calculate loss for valid pixel in the ground truth
-                    loss = self.objective(outputs, labels, cout, self.epoch)
+                    loss = self.objective(outputs, gt_depth, cout, self.epoch)
                                 
                     # statistics
-                    loss_meter[s].update(loss.item(), inputs_d.size(0))
+                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
 
-                    
-                    # Convert data to depth in meters before error metrics
-                    #outputs[outputs==0] = -1
-                    if not self.load_rgb: 
-                            outputs[outputs==outputs[0,0,0,0]] = -1
-                    labels[labels==0] = -1
+                    # Convert to depth in meters before error metrics
+                    outputs[outputs==0] = -1
+                    # if not self.load_rgb:
+                    #     outputs[outputs==outputs[0,0,0,0]] = -1
+                    gt_depth[gt_depth==0] = -1
                     if self.params['invert_depth']:        
                         outputs = 1 / outputs
-                        labels = 1 / labels
-                    outputs[outputs==-1] = 0
-                    labels[labels==-1] = 0
+                        gt_depth = 1 / gt_depth
+                    outputs[outputs < 0] = 0
+                    gt_depth[gt_depth < 0] = 0
                     outputs *= self.params['data_normalize_factor']/256
-                    labels *= self.params['data_normalize_factor']/256
-                    
-                    
+                    gt_depth *= self.params['data_normalize_factor']/256
+
+
                     # Calculate error metrics 
                     for m in err_metrics:
                         if m.find('Delta') >= 0:
                             fn = globals()['Deltas']() 
-                            error = fn(outputs, labels)
-                            err['Delta1'].update(error[0], inputs_d.size(0))
-                            err['Delta2'].update(error[1], inputs_d.size(0))
-                            err['Delta3'].update(error[2], inputs_d.size(0))
+                            error = fn(outputs, gt_depth)
+                            err['Delta1'].update(error[0], sparse_depth.size(0))
+                            err['Delta2'].update(error[1], sparse_depth.size(0))
+                            err['Delta3'].update(error[2], sparse_depth.size(0))
                             break 
                         else:    
                             fn = globals()[m]() 
-                            error = fn(outputs, labels)
-                            err[m].update(error.item(), inputs_d.size(0))
+                            error = fn(outputs, gt_depth)
+                            err[m].update(error.item(), sparse_depth.size(0))
                     
                     # Save output images (optional)
                     if self.save_images and s in ['selval', 'test']:
@@ -297,7 +306,7 @@ class KittiDepthTrainer(Trainer):
                 print('Evaluation results on [{}]:\n============================='.format(s))
                 print('[{}]: {:.8f}'.format('Loss',  loss_meter[s].avg))
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m,  err[m].avg))
-                            
+
                 
                 # Save evaluation metric to text file 
                 fname = 'error_' + s + '_epoch_' + str(self.epoch-1) + '.txt'
