@@ -16,14 +16,15 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
+from modules.StructNConv.KernelRoll import KernelRoll
 
 
 class StructNConv2d_gy(_ConvNd):
-    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0, dilation=1, groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1, bias=True):
 
         # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels,
-                                      kernel_size, stride, padding, dilation, False, 0, groups, bias)
+        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
+                                      stride=1, padding=1, dilation=1, kernel_size = 3)
 
         self.eps = 1e-20
         self.pos_fn = pos_fn
@@ -36,7 +37,7 @@ class StructNConv2d_gy(_ConvNd):
             EnforcePos.apply(self, 'weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
 
-    def forward(self, d, cd, s, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
 
         # calculate gradients from depths
         d_up = torch.roll(d, shifts=(1), dims=(2))
@@ -49,22 +50,9 @@ class StructNConv2d_gy(_ConvNd):
         s_down = torch.roll(s, shifts=(-1), dims=(2))
         cd_down[:, :, -1, :] = 0
 
-        cg_up = s * s_up * cd * cd_up
-        cg_mid = s * s_up * s_down * cd_up * cd_down
-        cg_down = s * s_down * cd * cd_down
-
-        height_up = (cd * d + cd_up * d_up) / (cd + cd_up)
-        height_mid = (cd_up * d_up + cd_down *
-                      d_down) / (cd_up + cd_down)
-        height_down = (cd * d + cd_down * d_down) / (cd + cd_down)
-
-        gy_up = (d - d_up) / height_up
-        gy_mid = (d_down - d_up) / 2 / height_mid
-        gy_down = (d_down - d) / height_down
-
-        gy_from_ds = (cg_up * gy_up + cg_mid * gy_mid +
-                      cg_down * gy_down) / (cg_up + cg_mid + cg_down)
-        cgy_from_ds = (cg_up + cg_mid + cg_down) / 3
+        cgy_from_ds = s * s_up * s_down * cd_up * s_up
+        height = (cd_up * d_up + cd_down * d_down) / (cd_up + cd_down)
+        gy_from_ds = (d_down - d_up) / 2 / height
 
         gy = (self.w_prop * cgy * gy + 1 * cgy_from_ds * gy_from_ds) / \
             (self.w_prop * cgy + 1 * cgy_from_ds)
@@ -73,41 +61,24 @@ class StructNConv2d_gy(_ConvNd):
         # Normalized Convolution with border masking during propagation
         denom = F.conv2d(cgy*s, self.weight, None, self.stride,
                          self.padding, self.dilation, self.groups) \
-            + cgy * (1-s) * self.weight[1, 1]
-        nomin = F.conv2d(gy*cgy*s, self.weight, None, self.stride,
+            + cgy * (1-s) * self.weight[self.kernel_size/2, self.kernel_size/2]
+        nom = F.conv2d(gy*cgy*s, self.weight, None, self.stride,
                          self.padding, self.dilation, self.groups) \
-            + gy * cgy * (1-s) * self.weight[1, 1]
-        nconv = nomin / (denom+self.eps)
+            + gy * cgy * (1-s) * self.weight[self.kernel_size/2, self.kernel_size/2]
+        nconv = nom / (denom+self.eps)+ self.bias
+        cout = denom / torch.sum(self.weight)
 
-        # Add bias
-        b = self.bias
-        sz = b.size(0)
-        b = b.view(1, sz, 1, 1)
-        b = b.expand_as(nconv)
-        nconv += b
-
-        # Propagate confidence
-        cout = denom
-        sz = cout.size()
-        cout = cout.view(sz[0], sz[1], -1)
-
-        k = self.weight
-        k_sz = k.size()
-        k = k.view(k_sz[0], -1)
-        s = torch.sum(k, dim=-1, keepdim=True)
-
-        cout = cout / s
-        cout = cout.view(sz)
-
-        return nconv, cout
+        return nconv*self.stride, cout
 
     def init_parameters(self):
         # Init weights
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.weight)
+            torch.nn.init.xavier_uniform_(self.channel_weight)
+            torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_prop)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.weight)
+            torch.nn.init.kaiming_uniform_(self.channel_weight)
+            torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_prop)
         # elif self.init_method == 'p': # Poisson
         #     mu=self.kernel_size[0]/2

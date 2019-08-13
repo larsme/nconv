@@ -16,18 +16,31 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
+from modules.StructNConv.KernelRoll import KernelRoll
 
 
-class StructNConv2d_d(_ConvNd):
-    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0, dilation=1, groups=1, bias=True):
+class StructNConv2D_d_with_g(_ConvNd):
+    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
+                 dilation=1, groups=1, bias=True):
 
         # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels,
-                                      kernel_size, stride, padding, dilation, False, 0, groups, bias)
+        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
+                                      dilation=dilation, kernel_size = (1, kernel_size, kernel_size))
+        self.spatial_weight = self.weight
+        # Call _ConvNd constructor
+        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias, kernel_size = (1, 1))
+        self.channel_weight = self.weight
+
+        self.dilation = dilation
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
 
         self.eps = 1e-20
         self.pos_fn = pos_fn
         self.init_method = init_method
+
+        self.kernel_roll = KernelRoll(kernel_size, stride, padding, dilation)
 
         # Initialize weights and bias
         self.init_parameters()
@@ -35,171 +48,68 @@ class StructNConv2d_d(_ConvNd):
         if self.pos_fn is not None:
             EnforcePos.apply(self, 'weight', pos_fn)
 
-    def forward(self, d, cd, s, sc, gx, cgx, gy, cgy):
 
-        ## get gradients
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
 
-        gx_left = torch.roll(gx, shifts=(1), dims=(3))
-        cgx_left = torch.roll(cgx, shifts=(1), dims=(3))
-        # cgx_left[:, :, :, 0] = 0
-        g_left = (cgx_left * gx_left + cgx*gx) / (cgx_left + cgx)
-        cg_left = (cgx_left + cgx) / 2
+        # get g_prop from gx, gy at origin and target
+        gx_roll = self.kernel_roll.kernel_channels(gx)
+        cgx_roll = self.kernel_roll.kernel_channel(cgx)
+        gy_roll = self.kernel_roll.kernel_channels(gy)
+        cgy_roll = self.kernel_roll.kernel_channels(cgy)
 
-        gx_right = torch.roll(gx, shifts=(-1), dims=(3))
-        cgx_right = torch.roll(cgx, shifts=(-1), dims=(3))
-        # cgx_right[:, :, :, -1] = 0
-        g_right = -(cgx_right * gx_right + cgx*gx) / (cgx_right + cgx)
-        cg_right = (cgx_right + cgx) / 2
+        gx = gx.unsqueeze(2)
+        cgx = cgx.unsqueeze(2)
+        gy = gy.unsqueeze(2)
+        cgy = cgy.unsqueeze(2)
 
-        gy_up = torch.roll(gy, shifts=(1), dims=(2))
-        cgy_up = torch.roll(cgy, shifts=(1), dims=(2))
-        # cgy_up[:, :, 0, :] = 0
-        g_up = (cgy_up * gy_up + cgy*gy) / (cgy_up + cgy)
-        cg_up = (cgy_up + cgy) / 2
+        gx_prop = (cgx_roll * gx_roll + cgx * gx) / (cgx_roll + cgx + self.eps)
+        cgx_prop = (cgx_roll + cgx) / 2
+        gy_prop = (cgy_roll * gy_roll + cgy * gy) / (cgy_roll + cgy + self.eps)
+        cgy_prop = (cgy_roll + cgy) / 2
 
-        gy_down = torch.roll(gy, shifts=(-1), dims=(2))
-        cgy_down = torch.roll(cgy, shifts=(-1), dims=(2))
-        # cgy_down[:, :, -1, :] = 0
-        g_down = -(cgy_down * gy_down + cgy*gy) / (cgy_down + cgy)
-        cg_down = (cgy_down + cgy) / 2
+        distsx = torch.expand(
+            torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(0),
+            self.kernel_size, -1).view(1, 1, -1, 1, 1)
+        adistx = torch.abs(distsx)
+        distsy = torch.expand(
+            torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(1),
+            -1, self.kernel_size).view(1, 1, -1, 1, 1)
+        adisty = torch.abs(distsy)
 
-        gx_left_up = torch.roll(gx, shifts=(1, 1), dims=(3, 2))
-        cgx_left_up = torch.roll(cgy, shifts=(1, 1), dims=(3, 2))
-        # cgx_left_up[:, :, :, 0] = 0
-        # cgx_left_up[:, :, 0, :] = 0
-        gy_left_up = torch.roll(gy, shifts=(1, 1), dims=(3, 2))
-        cgy_left_up = torch.roll(cgy, shifts=(1, 1), dims=(3, 2))
-        # cgy_left_up[:, :, :, 0] = 0
-        # cgy_left_up[:, :, 0, :] = 0
-        g_left_up = (cgx_left_up * gx_left_up + cgx*gx) / (cgx_left_up + cgx) +  (cgy_left_up * gy_left_up + cgy*gy) / (cgy_left_up + cgy)
-        cg_left_up = (cgx_left_up + cgx + cgy_left_up + cgy) / 4
+        g_prop = distsx * gx_prop + distsy * gy_prop
+        cg_prop = (adistx * cgx_prop + adisty * cgy_prop) / (adistx + adisty+self.eps)
 
-        gx_right_up = torch.roll(gx, shifts=(-1, 1), dims=(3, 2))
-        cgx_right_up = torch.roll(cgy, shifts=(-1, 1), dims=(3, 2))
-        # cgx_right_up[:, :, :, -1] = 0
-        # cgx_right_up[:, :, 0, :] = 0
-        gy_right_up = torch.roll(gy, shifts=(-1, 1), dims=(3, 2))
-        cgy_right_up = torch.roll(cgy, shifts=(-1, 1), dims=(3, 2))
-        # cgy_right_up[:, :, :, -1] = 0
-        # cgy_right_up[:, :, 0, :] = 0
-        g_right_up = - (cgx_right_up * gx_right_up + cgx*gx) / (cgx_right_up + cgx) +  (cgy_right_up * gy_right_up + cgy*gy) / (cgy_right_up + cgy)
-        cg_right_up = (cgx_right_up + cgx + cgy_right_up + cgy) / 4
+        # propagate d with g
+        d_roll = self.kernel_roll.kernel_channels(d)
+        cd_roll = self.kernel_roll.kernel_channels(cd)
+        s_prod_roll, cs_prod_roll = self.kernel_roll.s_prod_kernel_channels(s, cs)
 
-        gx_left_down = torch.roll(gx, shifts=(1, -1), dims=(3, 2))
-        cgx_left_down = torch.roll(cgy, shifts=(1, -1), dims=(3, 2))
-        # cgx_left_down[:, :, :, 0] = 0
-        # cgx_left_down[:, :, -1, :] = 0
-        gy_left_down = torch.roll(gy, shifts=(1, -1), dims=(3, 2))
-        cgy_left_down = torch.roll(cgy, shifts=(1, -1), dims=(3, 2))
-        cgy_left_down[:, :, :, 0] = 0
-        # cgy_left_down[:, :, -1, :] = 0
-        g_left_down = (cgx_left_down * gx_left_down + cgx*gx) / (cgx_left_down + cgx) -  (cgy_left_down * gy_left_down + cgy*gy) / (cgy_left_down + cgy)
-        cg_left_down = (cgx_left_down + cgx + cgy_left_down + cgy) / 4
+        d_prop = d_roll * (1+ g_prop)
+        cd_prop = cd_roll * (1 + self.w_grad * cg_prop) / (1+self.w_grad) * s_prod_roll
 
-        gx_right_down = torch.roll(gx, shifts=(-1, -1), dims=(3, 2))
-        cgx_right_down = torch.roll(cgy, shifts=(-1, -1), dims=(3, 2))
-        # cgx_right_down[:, :, :, -1] = 0
-        # cgx_right_down[:, :, -1, :] = 0
-        gy_right_down = torch.roll(gy, shifts=(-1, -1), dims=(3, 2))
-        cgy_right_down = torch.roll(cgy, shifts=(-1, -1), dims=(3, 2))
-        # cgy_right_down[:, :, :, -1] = 0
-        # cgy_right_down[:, :, -1, :] = 0
-        g_right_down = - (cgx_right_down * gx_right_down + cgx*gx) / (cgx_right_down + cgx) -  (cgy_right_down * gy_right_down + cgy*gy) / (cgy_right_down + cgy)
-        cg_right_down = (cgx_right_down + cgx + cgy_right_down + cgy) / 4
+        # Normalized Convolution along spatial dimensions
+        nom = F.conv3d(cd_prop * d_prop, self.statial_weight, self.groups)
+        denom = F.conv3d(cd_prop, self.statial_weight, self.groups)
+        d_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
+        cd_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
 
-        ## get d, dc
+        # Normalized Convolution along channel dimensions
+        nom = F.conv3d(cd_spatial * d_spatial, self.channel_weight, self.groups)
+        denom = F.conv3d(cd_spatial, self.channel_weight, self.groups)
+        d = nom / (denom+self.eps)
+        cd = denom / torch.sum(self.channel_weight)
 
-        d_left = torch.roll(d, shifts=(1), dims=(3)) * (1 + g_left)
-        cd_left = torch.roll(cd * s, shifts=(1), dims=(3)) * s * (1+self.w_grad * cg_left) / (1+self.w_grad)
-        cd_left[:, :, :, 0] = 0
-
-        d_right = torch.roll(d, shifts=(-1), dims=(3)) * (1 + g_right)
-        cd_right = torch.roll(cd * s, shifts=(-1), dims=(3)) * s * (1+self.w_grad * cg_right) / (1+self.w_grad)
-        cd_right[:, :, :, -1] = 0
-
-        d_up = torch.roll(d, shifts=(1), dims=(2)) * (1 + g_up)
-        cd_up = torch.roll(cd * s, shifts=(1), dims=(2)) * s * (1+self.w_grad * cg_up) / (1+self.w_grad)
-        cd_up[:, :, 0, :] = 0
-
-        d_down = torch.roll(d, shifts=(-1), dims=(2)) * (1 + g_down)
-        cd_down = torch.roll(cd * s, shifts=(-1), dims=(2)) * s * (1+self.w_grad * cg_down) / (1+self.w_grad)
-        cd_down[:, :, -1, :] = 0
-
-        d_left_up = torch.roll(d, shifts=(1, 1), dims=(3, 2)) * (1 + g_left_up)
-        cd_left_up = torch.roll(cd * s, shifts=(1, 1), dims=(3, 2)) * s * (1+self.w_grad * cg_left_up) / (1+self.w_grad)
-        cd_left_up[:, :, :, 0] = 0
-        cd_left_up[:, :, 0, :] = 0
-
-        d_right_up = torch.roll(d, shifts=(-1, 1), dims=(3, 2)) * (1 + g_right_up)
-        cd_right_up = torch.roll(cd * s, shifts=(-1, 1), dims=(3, 2)) * s * (1+self.w_grad * cg_right_up) / (1+self.w_grad)
-        cd_right_up[:, :, :, -1] = 0
-        cd_right_up[:, :, 0, :] = 0
-
-        d_left_down = torch.roll(d, shifts=(1, -1), dims=(3, 2)) * (1 + g_left_down)
-        cd_left_down = torch.roll(cd * s, shifts=(1, -1), dims=(3, 2)) * s * (1+self.w_grad * cg_left_down) / (1+self.w_grad)
-        cd_left_down[:, :, :, 0] = 0
-        cd_left_down[:, :, -1, :] = 0
-
-        d_right_down = torch.roll(d, shifts=(-1, -1), dims=(3, 2)) * (1 + g_right_down)
-        cd_right_down = torch.roll(cd * s, shifts=(-1, -1), dims=(3, 2)) * s * (1+self.w_grad * cg_right_down) / (1+self.w_grad)
-        cd_right_down[:, :, :, -1] = 0
-        cd_right_down[:, :, -1, :] = 0
-
-        # convolution
-        
-
-        # Normalized Convolution with border masking during propagation
-        nomin = self.weight[0,0]* cd_left_up * d_left_up
-        + self.weight[0,1]* cd_up * d_up
-        + self.weight[0,2]* cd_right_up * d_right_up
-        + self.weight[1,0]* cd_left * d_left
-        + self.weight[1,1]* cd * d
-        + self.weight[1,2]* cd_right * d_right
-        + self.weight[2,0]* cd_left_down * d_left_down
-        + self.weight[2,1]* cd_down * d_down
-        + self.weight[2,2]* cd_right_down * d_right_down
-
-        denomin = self.weight[0,0]* cd_left_up
-        + self.weight[0,1]* cd_up
-        + self.weight[0,2]* cd_right_up
-        + self.weight[1,0]* cd_left
-        + self.weight[1,1]* cd
-        + self.weight[1,2]* cd_right
-        + self.weight[2,0]* cd_left_down
-        + self.weight[2,1]* cd_down
-        + self.weight[2,2]* cd_right_down
-
-        nconv = nomin / (denomin+self.eps)
-
-        # Add bias
-        b = self.bias
-        sz = b.size(0)
-        b = b.view(1, sz, 1, 1)
-        b = b.expand_as(nconv)
-        nconv += b
-
-        # Propagate confidence
-        cout = denomin
-        sz = cout.size()
-        cout = cout.view(sz[0], sz[1], -1)
-
-        k = self.weight
-        k_sz = k.size()
-        k = k.view(k_sz[0], -1)
-        s = torch.sum(k, dim=-1, keepdim=True)
-
-        cout = cout / s
-        cout = cout.view(sz)
-
-        return nconv, cout
+        return d, cd
 
     def init_parameters(self):
         # Init weights
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.weight)
+            torch.nn.init.xavier_uniform_(self.channel_weight)
+            torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_grad)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.weight)
+            torch.nn.init.kaiming_uniform_(self.channel_weight)
+            torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_grad)
         # elif self.init_method == 'p': # Poisson
         #     mu=self.kernel_size[0]/2

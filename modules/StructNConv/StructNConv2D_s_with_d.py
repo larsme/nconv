@@ -16,13 +16,16 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
+from modules.StructNConv.KernelRoll import KernelRoll
 
 class StructNConv2d_s(_ConvNd):
-    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0, dilation=1, groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k',
+                 stride=1, padding=0, dilation=1, groups=1, bias=True):
         
         # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, False, 0, groups, bias)
-        
+        super(_ConvNd, self).__init__(in_channels, out_channels, kernel_size, stride, padding, dilation,
+                                      False, 0, groups, bias)
+
         self.eps = 1e-20
         self.pos_fn = pos_fn
         self.init_method = init_method
@@ -37,60 +40,42 @@ class StructNConv2d_s(_ConvNd):
 
         
         
-    def forward(self, d, cd, s, sc):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
 
         # calculate smoothness from depths
-        _, j_max = F.max_pool2d(d * cd, kernel_size=3, stride=1, return_indices=True, padding=1)
-        _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=3, stride=1, return_indices=True, padding=1)
+        _, j_max = F.max_pool2d(d * cd, kernel_size=self.kernel_size, stride=self.stride, return_indices=True, padding=self.padding)
+        _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=self.kernel_size, stride=self.stride, return_indices=True, padding=self.padding)
 
         min_div_max = torch.abs(d[j_max] / (d[j_min] + self.eps))
 
         s_from_d = (1 - self.w_s_from_d[0] - self.w_s_from_d[1]) * min_div_max + self.w_s_from_d[0] * min_div_max**2 + self.w_s_from_d[1] * min_div_max**3 
         cs_from_d = cd[j_max] * cd[j_min]
 
-        s = (self.w_prop * sc * s + 1 * cs_from_d * s_from_d) / (self.w_prop * sc + 1 * cs_from_d)
-        sc = (self.w_prop * sc + 1 * cs_from_d) / (self.w_prop + 1)
+        s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d)
+        cs = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
 
 
         # Normalized Convolution
-        denom = F.conv2d(sc, self.weight, None, self.stride,
+        nom = F.conv2d(cs, self.weight, None, self.stride,
                         self.padding, self.dilation, self.groups)        
-        nomin = F.conv2d(s*sc, self.weight, None, self.stride,
-                        self.padding, self.dilation, self.groups)        
-        nconv = nomin / (denom+self.eps)
-        
-        
-        # Add bias
-        b = self.bias
-        sz = b.size(0)
-        b = b.view(1,sz,1,1)
-        b = b.expand_as(nconv)
-        nconv += b
-        
-        # Propagate confidence
-        cout = denom
-        sz = cout.size()
-        cout = cout.view(sz[0], sz[1], -1)
-        
-        k = self.weight
-        k_sz = k.size()
-        k = k.view(k_sz[0], -1)
-        s = torch.sum(k, dim=-1, keepdim=True)        
+        denom = F.conv2d(s*cs, self.weight, None, self.stride,
+                        self.padding, self.dilation, self.groups)
+        nconv = nom / (denom+self.eps)+ self.bias
+        cout = denom / torch.sum(self.weight)
 
-        cout = cout / s
-        cout = cout.view(sz)
-        
         return nconv, cout
 
     
     def init_parameters(self):
         # Init weights
-        if self.init_method == 'x': # Xavier            
-            torch.nn.init.xavier_uniform_(self.weight)
+        if self.init_method == 'x': # Xavier
+            torch.nn.init.xavier_uniform_(self.channel_weight)
+            torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_prop)
             torch.nn.init.xavier_uniform_(self.w_s_from_d)
         else: #elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.weight)
+            torch.nn.init.kaiming_uniform_(self.channel_weight)
+            torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.w_s_from_d)
         # elif self.init_method == 'p': # Poisson
@@ -108,7 +93,7 @@ class StructNConv2d_s(_ConvNd):
             
         # Init bias
         self.bias = torch.nn.Parameter(torch.zeros(self.out_channels)+0.01)
-    
+
 
 # # Non-negativity enforcement class        
 # class EnforceMonotonity(object):
