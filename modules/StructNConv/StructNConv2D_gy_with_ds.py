@@ -16,10 +16,10 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
-from modules.StructNConv.KernelRoll import KernelRoll
+from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNConv2d_gy(_ConvNd):
+class StructNConv2d_gy_with_d(_ConvNd):
     def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1, bias=True):
 
         # Call _ConvNd constructor
@@ -50,25 +50,34 @@ class StructNConv2d_gy(_ConvNd):
         s_down = torch.roll(s, shifts=(-1), dims=(2))
         cd_down[:, :, -1, :] = 0
 
-        cgy_from_ds = s * s_up * s_down * cd_up * s_up
+        cgy_from_ds = s * s_up * s_down * cd_up * cd_up
         height = (cd_up * d_up + cd_down * d_down) / (cd_up + cd_down)
         gy_from_ds = (d_down - d_up) / 2 / height
 
+        # merge calculated gradients with propagated gradients
         gy = (self.w_prop * cgy * gy + 1 * cgy_from_ds * gy_from_ds) / \
             (self.w_prop * cgy + 1 * cgy_from_ds)
         cgy = (self.w_prop * cgy + 1 * cgy_from_ds) / (self.w_prop + 1)
 
-        # Normalized Convolution with border masking during propagation
-        denom = F.conv2d(cgy*s, self.weight, None, self.stride,
-                         self.padding, self.dilation, self.groups) \
-            + cgy * (1-s) * self.weight[self.kernel_size/2, self.kernel_size/2]
-        nom = F.conv2d(gy*cgy*s, self.weight, None, self.stride,
-                         self.padding, self.dilation, self.groups) \
-            + gy * cgy * (1-s) * self.weight[self.kernel_size/2, self.kernel_size/2]
-        nconv = nom / (denom+self.eps)+ self.bias
-        cout = denom / torch.sum(self.weight)
+        # prepare convolution
+        gy_roll = self.kernel_channels.kernel_channels(gy)
+        cgy_roll = self.kernel_channels.kernel_channels(cgy)
+        s_prod_roll, cs_prod_roll = self.kernel_channels.s_prod_kernel_channels(s, cs)
+        cgy_prop = cgy_roll * s_prod_roll
 
-        return nconv*self.stride, cout
+        # Normalized Convolution along spatial dimensions
+        nom = F.conv3d(cgy_prop * gy_roll, self.statial_weight, self.groups)
+        denom = F.conv3d(cgy_prop, self.statial_weight, self.groups)
+        gy_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
+        cgy_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
+
+        # Normalized Convolution along spatial dimensions
+        nom = F.conv3d(cgy_spatial * gy_spatial, self.channel_weight, self.groups)
+        denom = F.conv3d(cgy_spatial, self.channel_weight, self.groups)
+        gy = nom / (denom+self.eps)
+        cgy = denom / torch.sum(self.channel_weight)
+
+        return gy*self.stride, cgy
 
     def init_parameters(self):
         # Init weights

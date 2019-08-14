@@ -16,7 +16,7 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
-from modules.StructNConv.KernelRoll import KernelRoll
+from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class StructNConv2D_d_with_g(_ConvNd):
@@ -40,7 +40,7 @@ class StructNConv2D_d_with_g(_ConvNd):
         self.pos_fn = pos_fn
         self.init_method = init_method
 
-        self.kernel_roll = KernelRoll(kernel_size, stride, padding, dilation)
+        self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
         # Initialize weights and bias
         self.init_parameters()
@@ -50,10 +50,10 @@ class StructNConv2D_d_with_g(_ConvNd):
 
 
     def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
-        gx_roll = self.kernel_roll.kernel_channels(gx)
-        cgx_roll = self.kernel_roll.kernel_channel(cgx)
-        gy_roll = self.kernel_roll.kernel_channels(gy)
-        cgy_roll = self.kernel_roll.kernel_channels(cgy)
+        gx_roll = self.kernel_channels.kernel_channels(gx)
+        cgx_roll = self.kernel_channels.kernel_channel(cgx)
+        gy_roll = self.kernel_channels.kernel_channels(gy)
+        cgy_roll = self.kernel_channels.kernel_channels(cgy)
 
         gx = gx.unsqueeze(2)
         cgx = cgx.unsqueeze(2)
@@ -67,19 +67,19 @@ class StructNConv2D_d_with_g(_ConvNd):
 
         distsx = torch.expand(
             torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(0),
-            self.kernel_size, -1).view(1, 1, -1, 1, 1)
+            self.kernel_size, -1).view(1, 1, -1, 1, 1) * self.dilation
         adistx = torch.abs(distsx)
         distsy = torch.expand(
             torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(1),
-            -1, self.kernel_size).view(1, 1, -1, 1, 1)
+            -1, self.kernel_size).view(1, 1, -1, 1, 1) * self.dilation
         adisty = torch.abs(distsy)
 
         g_prop = distsx * gx_prop + distsy * gy_prop
         cg_prop = (adistx * cgx_prop + adisty * cgy_prop) / (adistx + adisty+self.eps)
 
 
-        d_roll = self.kernel_roll.kernel_channels(d)
-        cd_roll = self.kernel_roll.kernel_channels(cd)
+        d_roll = self.kernel_channels.kernel_channels(d)
+        cd_roll = self.kernel_channels.kernel_channels(cd)
 
 
         d_prop = d_roll * (1+ g_prop)
@@ -91,7 +91,7 @@ class StructNConv2D_d_with_g(_ConvNd):
         d_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
         cd_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
 
-        # Normalized Convolution along spatial dimensions
+        # Normalized Convolution along channel dimensions
         nom = F.conv3d(cd_spatial * d_spatial, self.channel_weight, self.groups)
         denom = F.conv3d(cd_spatial, self.channel_weight, self.groups)
         d = nom / (denom+self.eps)

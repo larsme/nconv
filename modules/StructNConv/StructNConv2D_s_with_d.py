@@ -16,9 +16,9 @@ from scipy.stats import poisson
 from scipy import signal
 
 from modules.NConv2D import EnforcePos
-from modules.StructNConv.KernelRoll import KernelRoll
+from modules.StructNConv.KernelChannels import KernelChannels
 
-class StructNConv2d_s(_ConvNd):
+class StructNConv2d_s_with_d(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k',
                  stride=1, padding=0, dilation=1, groups=1, bias=True):
         
@@ -32,8 +32,7 @@ class StructNConv2d_s(_ConvNd):
         
         # Initialize weights and bias
         self.init_parameters()
-        
-        
+
         if self.pos_fn is not None :
             EnforcePos.apply(self, 'weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)

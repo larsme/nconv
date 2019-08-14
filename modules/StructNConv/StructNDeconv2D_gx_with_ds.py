@@ -19,7 +19,7 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNConv2d_gx_with_ds(_ConvNd):
+class StructNDeconv2d_gx_with_ds(_ConvNd):
     def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1, bias=True):
 
         # Call _ConvNd constructor
@@ -37,7 +37,7 @@ class StructNConv2d_gx_with_ds(_ConvNd):
             EnforcePos.apply(self, 'weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
 
         # calculate gradients from depths
         d_left = torch.roll(d, shifts=(1), dims=(3))
@@ -60,24 +60,19 @@ class StructNConv2d_gx_with_ds(_ConvNd):
         cgx = (self.w_prop * cgx + 1 * cgx_from_ds) / (self.w_prop + 1)
 
         # prepare convolution
-        gx_roll = self.kernel_channels.kernel_channels(gx)
-        cgx_roll = self.kernel_channels.kernel_channels(cgx)
-        s_prod_roll, cs_prod_roll = self.kernel_channels.s_prod_kernel_channels(s, cs)
+        gx_roll = self.kernel_channels.deconv_kernel_channels(gx)
+        cgx_roll = self.kernel_channels.deconv_kernel_channels(cgx)
+        deconv_present = self.kernel_channels.deconv_kernel_channels(torch.ones_like(gx))
         cgx_prop = cgx_roll * s_prod_roll
 
-        # Normalized Convolution along spatial dimensions
+        # Normalized Deconvolution along spatial dimensions
         nom = F.conv3d(cgx_prop * gx_roll, self.statial_weight, self.groups)
         denom = F.conv3d(cgx_prop, self.statial_weight, self.groups)
-        gx_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
-        cgx_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
+        cdenom = F.conv3d(deconv_present, self.statial_weight, self.groups)
+        gx = (nom / (denom+self.eps) + self.bias).squeeze(2)
+        cgx = (denom / (cdenom+self.eps)).squeeze(2)
 
-        # Normalized Convolution along spatial dimensions
-        nom = F.conv3d(cgx_spatial * gx_spatial, self.channel_weight, self.groups)
-        denom = F.conv3d(cgx_spatial, self.channel_weight, self.groups)
-        gx = nom / (denom+self.eps)
-        cgx = denom / torch.sum(self.channel_weight)
-
-        return gx*self.stride, cgx
+        return gx/self.stride, cgx
 
     def init_parameters(self):
         # Init weights

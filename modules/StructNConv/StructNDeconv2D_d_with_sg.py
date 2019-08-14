@@ -19,16 +19,16 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2D_d_with_g(_ConvNd):
+class StructNDeconv2D_d_with_sg(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, bias=True):
 
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
-                                      dilation=dilation, kernel_size = (1, kernel_size, kernel_size))
+                                      dilation=dilation, kernel_size=(1, kernel_size, kernel_size))
         self.spatial_weight = self.weight
         # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias, kernel_size = (1, 1))
+        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias, kernel_size=(1, 1))
         self.channel_weight = self.weight
 
         self.dilation = dilation
@@ -49,7 +49,7 @@ class StructNDeconv2D_d_with_g(_ConvNd):
             EnforcePos.apply(self, 'weight', pos_fn)
 
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
         gx_roll = self.kernel_channels.deconv_kernel_channels(gx)
         cgx_roll = self.kernel_channels.deconv_kernel_channels(cgx)
         gy_roll = self.kernel_channels.deconv_kernel_channels(gy)
@@ -74,7 +74,7 @@ class StructNDeconv2D_d_with_g(_ConvNd):
         deconv_present = self.kernel_channels.deconv_kernel_channels(torch.ones_like(d))
 
         d_prop = d_roll * (1 + g_prop)
-        cd_prop = cd_roll * (1 + self.w_grad * cg_prop) / (1+self.w_grad)
+        cd_prop = cd_roll * (1 + self.w_grad * cg_prop) / (1+self.w_grad) * s_prod_roll
 
         # Normalized Deconvolution along spatial dimensions
         nom = F.conv3d(cd_prop * d_prop, self.statial_weight, self.groups)
@@ -91,10 +91,14 @@ class StructNDeconv2D_d_with_g(_ConvNd):
             torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_grad)
+            torch.nn.init.xavier_uniform_(self.w_s_prod)
+            torch.nn.init.xavier_uniform_(self.w_cs_prod)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_grad)
+            torch.nn.init.kaiming_uniform_(self.w_s_prod)
+            torch.nn.init.kaiming_uniform_(self.w_cs_prod)
         # elif self.init_method == 'p': # Poisson
         #     mu=self.kernel_size[0]/2
         #     dist = poisson(mu)

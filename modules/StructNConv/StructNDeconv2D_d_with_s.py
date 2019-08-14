@@ -19,27 +19,17 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2D_d_with_g(_ConvNd):
+class StructNDeconv2d_d_with_s(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, bias=True):
 
         # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
-                                      dilation=dilation, kernel_size = (1, kernel_size, kernel_size))
-        self.spatial_weight = self.weight
-        # Call _ConvNd constructor
-        super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias, kernel_size = (1, 1))
-        self.channel_weight = self.weight
-
-        self.dilation = dilation
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
+        super(_ConvNd, self).__init__(in_channels, out_channels,
+                                      kernel_size, stride, padding, dilation, False, 0, groups, bias)
 
         self.eps = 1e-20
         self.pos_fn = pos_fn
         self.init_method = init_method
-
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
         # Initialize weights and bias
@@ -48,36 +38,15 @@ class StructNDeconv2D_d_with_g(_ConvNd):
         if self.pos_fn is not None:
             EnforcePos.apply(self, 'weight', pos_fn)
 
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
-        gx_roll = self.kernel_channels.deconv_kernel_channels(gx)
-        cgx_roll = self.kernel_channels.deconv_kernel_channels(cgx)
-        gy_roll = self.kernel_channels.deconv_kernel_channels(gy)
-        cgy_roll = self.kernel_channels.deconv_kernel_channels(cgy)
-
-        # scale gradients by kernel distance
-        distsx = torch.expand(
-            torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(0),
-            self.kernel_size, -1).view(1, 1, -1, 1, 1) * self.stride * self.dilation
-        adistx = torch.abs(distsx)
-        distsy = torch.expand(
-            torch.arange((self.kernel_size-1)/2, -self.kernel_size/2, -1).unsqueeze(1),
-            -1, self.kernel_size).view(1, 1, -1, 1, 1) * self.stride * self.dilation
-        adisty = torch.abs(distsy)
-
-        g_prop = distsx * gx_roll + distsy * gy_roll
-        cg_prop = (adistx * cgx_roll + adisty * cgy_roll) / (adistx + adisty+self.eps)
-
-        # propagate d, cd
         d_roll = self.kernel_channels.deconv_kernel_channels(d)
         cd_roll = self.kernel_channels.deconv_kernel_channels(cd)
         deconv_present = self.kernel_channels.deconv_kernel_channels(torch.ones_like(d))
-
-        d_prop = d_roll * (1 + g_prop)
-        cd_prop = cd_roll * (1 + self.w_grad * cg_prop) / (1+self.w_grad)
+        cd_prop = cd_roll * s_prod_roll
 
         # Normalized Deconvolution along spatial dimensions
-        nom = F.conv3d(cd_prop * d_prop, self.statial_weight, self.groups)
+        nom = F.conv3d(cd_prop * d_roll, self.statial_weight, self.groups)
         denom = F.conv3d(cd_prop, self.statial_weight, self.groups)
         cdenom = F.conv3d(deconv_present, self.statial_weight, self.groups)
         d = (nom / (denom+self.eps) + self.bias).squeeze(2)
@@ -90,11 +59,13 @@ class StructNDeconv2D_d_with_g(_ConvNd):
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
-            torch.nn.init.xavier_uniform_(self.w_grad)
+            torch.nn.init.xavier_uniform_(self.w_prop)
+            torch.nn.init.xavier_uniform_(self.w_s_from_d)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
-            torch.nn.init.kaiming_uniform_(self.w_grad)
+            torch.nn.init.kaiming_uniform_(self.w_prop)
+            torch.nn.init.kaiming_uniform_(self.w_s_from_d)
         # elif self.init_method == 'p': # Poisson
         #     mu=self.kernel_size[0]/2
         #     dist = poisson(mu)

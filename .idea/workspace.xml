@@ -2,26 +2,25 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/KernelRoll.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_g.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d_with_s.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg_with_s.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_s.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/exp_unguided_d/network_exp_unguided_d.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/exp_unguided_sd/network_exp_unguided_ds.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/nconv.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/nconv.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gx_with_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_s.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_sg.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_ds.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_ds.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/StructNConv/KernelRoll.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/KernelChannels.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_s.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_sg.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_sg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gx_with_ds.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gx_with_ds.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_ds.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_ds.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_s_with_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_s_with_d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_g.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_g.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -46,13 +45,13 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\workspace\StructNConv\exp_unguided_sd" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\modules\StructNConv" />
       <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\workspace\StructNConv" />
       <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\workspace\StructNConv\exp_unguided_sd" />
     </key>
   </component>
   <component name="RunDashboard">
