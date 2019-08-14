@@ -20,10 +20,8 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(BASE_DIR, 'dataloader'))
-from KittiDepthDataloader import KittiDepthDataloader
-sys.path.append(os.path.join(BASE_DIR, 'modules'))
-from losses import ConfLossDecay, SmoothL1Loss, MSELoss
+from dataloader.KittiDepthDataloader import KittiDepthDataloader
+from modules.losses import ConfLossDecay, SmoothL1Loss, MSELoss
 
 # Fix CUDNN error for non-contiguous inputs
 import torch.backends.cudnn as cudnn
@@ -34,11 +32,10 @@ cudnn.benchmark = True
 
 
 
-def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_ws_path ='workspace/'):
+def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_ws_path ='workspace'):
     exp_dir = os.path.join(BASE_DIR, training_ws_path, exp)
 
     # Add the experiment's folder to python path
-    sys.path.append(exp_dir)
 
     # Read parameters file
     with open(os.path.join(exp_dir, 'params.json'), 'r') as fp:
@@ -51,7 +48,7 @@ def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_
     dataloaders, dataset_sizes = KittiDepthDataloader(params)
 
     # Import the network file
-    f = importlib.import_module('network_'+exp)
+    f = importlib.import_module(training_ws_path+'.'+exp+'.network_'+exp)
     model = f.CNN(pos_fn = params['enforce_pos_weights']).to(device)
 
     # Import the trainer

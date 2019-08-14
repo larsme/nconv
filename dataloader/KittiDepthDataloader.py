@@ -10,7 +10,7 @@ import os
 import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
-from KittiDepthDataset import KittiDepthDataset
+from dataloader.KittiDepthDataset import KittiDepthDataset
 
 def KittiDepthDataloader(params):
     
@@ -37,8 +37,8 @@ def KittiDepthDataloader(params):
     
     # Select the desired number of images from the training set 
     if params['train_on'] != 'full':
-        image_datasets['train'].data = image_datasets['train'].data[0:params['train_on']]
-        image_datasets['train'].gt = image_datasets['train'].gt[0:params['train_on']]
+        image_datasets['train'].sparse_depth_paths = image_datasets['train'].sparse_depth_paths[0:params['train_on']]
+        image_datasets['train'].gt_depth_paths = image_datasets['train'].gt_depth_paths[0:params['train_on']]
     
     dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'], num_workers=4)
     dataset_sizes['train'] = {len(image_datasets['train'])}

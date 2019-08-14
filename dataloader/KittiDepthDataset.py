@@ -51,6 +51,10 @@ class KittiDepthDataset(Dataset):
         if item < 0 or item >= self.__len__():
             return None
 
+        desired_image_height = 352
+        desired_image_width = 1216
+        resize = True
+
         # Check if Data filename is equal to GT filename
         if self.setname == 'train' or self.setname == 'val':
             sparse_depth_path = self.sparse_depth_paths[item].split(self.setname)[1]
@@ -66,6 +70,15 @@ class KittiDepthDataset(Dataset):
 
             # Set the certainty path
             sep = str(self.sparse_depth_paths[item]).split('data_depth_velodyne')
+
+            s = (self.gt_depth_paths[item].split(self.setname)[1]).split('/')
+            drive_dir = s[1]
+            day_dir = drive_dir.split('_drive')[0]
+            img_source_dir = s[4]
+            img_idx_dir = s[5].split('.png')[0]
+            cam = img_source_dir.split('0')[1]
+            computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
+                                                desired_image_width, desired_image_height, resize=resize)
 
         elif self.setname == 'selval':
             sparse_depth_path = self.sparse_depth_paths[item].split('00000')[1]
@@ -101,22 +114,9 @@ class KittiDepthDataset(Dataset):
                 t = transforms.Grayscale(1)
                 rgb = t(rgb)
 
-        resize = True
-
         # Read images and convert them to 4D floats
         sparse_depth = Image.open(str(self.sparse_depth_paths[item]))
         gt_depth = Image.open(str(self.gt_depth_paths[item]))
-
-        desired_image_height = 352
-        desired_image_width = 1216
-        s = (self.gt_depth_paths[item].split(self.setname)[1]).split('/')
-        drive_dir = s[1]
-        day_dir = drive_dir.split('_drive')[0]
-        img_source_dir = s[4]
-        img_idx_dir = s[5].split('.png')[0]
-        cam = img_source_dir.split('0')[1]
-        computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
-                                            desired_image_width, desired_image_height, resize=resize)
 
         # Apply transformations if given
         if self.transform is not None:
@@ -136,6 +136,8 @@ class KittiDepthDataset(Dataset):
         # Convert to numpy
         sparse_depth = np.array(sparse_depth, dtype=np.float16)
         gt_depth = np.array(gt_depth, dtype=np.float16)
+        if not (self.setname == 'train' or self.setname == 'val'):
+            computed_depth = sparse_depth
 
         # Normalize the depth
         sparse_depth = sparse_depth / self.norm_factor  #[0,1]

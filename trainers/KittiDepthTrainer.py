@@ -9,17 +9,16 @@ __email__ = "abdo.eldesokey@gmail.com"
 import os
 import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
-from trainer import Trainer # from CVLPyDL repo
+# sys.path.append(BASE_DIR)
+from trainers.trainer import Trainer # from CVLPyDL repo
 import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
 import os.path
-sys.path.append(os.path.join(BASE_DIR, '../utils'))
-from AverageMeter import AverageMeter
-from saveTensorToImages import saveTensorToImages
-from error_metrics import MAE, RMSE, MRE, Deltas
+from utils.AverageMeter import AverageMeter
+from utils.saveTensorToImages import saveTensorToImages
+from utils.error_metrics import MAE, RMSE, MRE, Deltas
 
 err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
 
