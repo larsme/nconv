@@ -100,7 +100,9 @@ class KittiDepthTrainer(Trainer):
         inputs_c = (inputs_d > 0).astype(float)
 
         # Normalize the sparse_depth
+        print('lidar median: %5.2f' % (np.median(inputs_d[inputs_d>0])))
         inputs_d = inputs_d / self.params['data_normalize_factor'] # [0,1]
+        print('rescaled median: %5.2f' % (np.median(inputs_d[inputs_d>0])))
 
         # Expand dims into Pytorch format
         if np.ndim(inputs_d) == 2:
@@ -124,18 +126,25 @@ class KittiDepthTrainer(Trainer):
 
         # Convert RGB image to tensor
         if self.load_rgb:
+            print('medians input rgb: %5.2f - %5.2f - %5.2f' % (np.median(inputs_rgb[:,:,0]),np.median(inputs_rgb[:,:,1]),np.median(inputs_rgb[:,:,2])))
             inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
+            print('medians input rgb: %5.2f - %5.2f, %5.2f' % (np.median(inputs_rgb[:,:,0]),np.median(inputs_rgb[:,:,1]),np.median(inputs_rgb[:,:,2])))
             inputs_rgb /= 255
+            print(np.shape(inputs_rgb))
+            print('medians rescaled input rgb: %5.2f - %5.2f - %5.2f' % (np.median(inputs_rgb[:,:,0]),np.median(inputs_rgb[:,:,1]),np.median(inputs_rgb[:,:,2])))
             if np.ndim(inputs_rgb) == 3:
                 inputs_rgb = np.transpose(inputs_rgb, (2, 0, 1))
                 inputs_rgb = np.expand_dims(inputs_rgb, 0)
+                print(np.shape(inputs_rgb))
             else:
                 inputs_rgb = np.transpose(inputs_rgb, (0, 3, 1, 2))
+                print(np.shape(inputs_rgb))
             inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
 
 
         device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
 
+        print(np.shape(inputs_d))
         inputs_d = inputs_d.to(device)
         inputs_c = inputs_c.to(device)
 
@@ -246,39 +255,136 @@ class KittiDepthTrainer(Trainer):
                 # Iterate over data.
                 for data in self.dataloaders[s]:
                     
-                    if self.load_rgb:
-                        sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        inputs_rgb = inputs_rgb.to(device)
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
-                    else:
-                        sparse_depth, gt_depth, computed_depth, item_idxs = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
-                                    
-                    
+                    from PIL import Image
+                    sparse_depth, gt_depth, computed_depth, item_idxs, rgb = data
+                    sparse_depth = np.squeeze(sparse_depth[1, ...].cpu().data.numpy())
+                    computed_depth = np.squeeze(computed_depth[1, ...].cpu().data.numpy())
+                    gt_depth = np.squeeze(gt_depth[1, ...].cpu().data.numpy())
+                    rgb = np.squeeze(rgb[1, ...].cpu().data.numpy())
+
+                    import matplotlib.pyplot as plt
+                    from PIL import Image
+                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                    q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
+                    q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
+                    print('lidar quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    fig = Image.fromarray(depth_img)
+                    fig.save('lidar_img', 'png')
+                    fig.show('lidar_img')
+
+                    q1_lidar = np.quantile(computed_depth[computed_depth > 0], 0.05)
+                    q2_lidar = np.quantile(computed_depth[computed_depth > 0], 0.95)
+                    print('computed lidar quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(computed_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    fig = Image.fromarray(depth_img)
+                    fig.save('computed_lidar_img', 'png')
+                    fig.show('computed_lidar_img')
+
+                    q1_lidar = np.quantile(gt_depth, 0.05)
+                    q2_lidar = np.quantile(gt_depth, 0.95)
+                    print('real quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
+
+                    outputs, cout = self.return_one_prediction(sparse_depth, rgb)
+                    outputs_computed, cout = self.return_one_prediction(computed_depth, rgb)
+                    # gt_depth=gt_depth.to(device)
+                    # outputs=outputs.to(device)
+                    # cout=cout.to(device)
+
+
+                    # shared = np.logical_and(sparse_depth != 0, computed_depth != 0)
+                    # plt.hist(sparse_depth[shared] - computed_depth[shared], bins='auto')
+                    # plt.title('Offset')
+                    # plt.savefig('Offset')
+                    # plt.show()
+                    # plt.hist(sparse_depth[shared] / computed_depth[shared], bins='auto')
+                    # plt.title('Factor')
+                    # plt.savefig('Factor')
+                    # plt.show()
+                    # plt.scatter(np.where(shared)[1], sparse_depth[shared] / computed_depth[shared], marker='.', s=0.01)
+                    # plt.title('Factor over x')
+                    # plt.savefig('Factor over x')
+                    # plt.show()
+                    # plt.scatter(np.where(shared)[1], sparse_depth[shared] - computed_depth[shared], marker='.', s=0.01)
+                    # plt.title('Offset over x')
+                    # plt.savefig('Offset over x')
+                    # plt.show()
+
+                    # import numpy as np
+                    #
+                    # if self.load_rgb:
+                    #
+                    #     sparse_depth, C, gt_depth, item_idxs, rgb = sparse_depth
+                    #     print(np.shape(rgb))
+                    #     print('medians rescaled, transposed input rgb: %5.2f - %5.2f - %5.2f' % (np.median(rgb[:,0,:,:]),np.median(rgb[:,1,:,:]),np.median(rgb[:,2,:,:])))
+                    #
+                    #     sparse_depth=sparse_depth.to(device)
+                    #     C=C.to(device)
+                    #     gt_depth=gt_depth.to(device)
+                    #     rgb= rgb.to(device)
+                    #     outputs, cout = self.net(sparse_depth, C, rgb)
+                    # else:
+                    #     sparse_depth, C, gt_depth, item_idxs = sparse_depth
+                    #     sparse_depth=sparse_depth.to(device)
+                    #     C=C.to(device)
+                    #     gt_depth=gt_depth.to(device)
+                    #     outputs, cout = self.net(sparse_depth, C)
+
                     # Calculate loss for valid pixel in the ground truth
-                    loss = self.objective(outputs, gt_depth, cout, self.epoch)
-                                
+                    # loss = self.objective(outputs, gt_depth, cout, self.epoch)
+                    #
                     # statistics
-                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                    # loss_meter[s].update(loss.item(), sparse_depth.size(0))
 
                     # Convert to depth in meters before error metrics
-                    outputs[outputs==0] = -1
-                    # if not self.load_rgb:
-                    #     outputs[outputs==outputs[0,0,0,0]] = -1
-                    gt_depth[gt_depth==0] = -1
-                    if self.params['invert_depth']:        
-                        outputs = 1 / outputs
-                        gt_depth = 1 / gt_depth
                     outputs[outputs < 0] = 0
                     gt_depth[gt_depth < 0] = 0
                     outputs *= self.params['data_normalize_factor']/256
+                    outputs_computed *= self.params['data_normalize_factor']/256
                     gt_depth *= self.params['data_normalize_factor']/256
 
+                    if self.load_rgb:
+                        fig = Image.fromarray(np.ndarray.astype(rgb, np.uint8))
+                        fig.save('img', 'png')
+                        fig.show('img')
 
+                    q1_lidar = np.quantile(outputs[outputs>0], 0.05)
+                    q2_lidar = np.quantile(outputs[outputs>0], 0.95)
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(outputs, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    fig = Image.fromarray(depth_img)
+                    fig.save('depth_img_lidar', 'png')
+                    fig.show('depth_img_lidar')
+
+                    q1_lidar = np.quantile(outputs_computed[outputs_computed>0], 0.05)
+                    q2_lidar = np.quantile(outputs_computed[outputs_computed>0], 0.95)
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(outputs_computed, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    fig = Image.fromarray(depth_img)
+                    fig.save('depth_img_computed', 'png')
+                    fig.show('depth_img_computed')
+
+                    gt_depth = gt_depth
+                    q1_lidar = np.quantile(gt_depth[gt_depth>0], 0.05)
+                    q2_lidar = np.quantile(gt_depth[gt_depth>0], 0.95)
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(gt_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    fig = Image.fromarray(depth_img)
+                    fig.save('gth_img', 'png')
+                    fig.show('gt_img')
+
+                    import sys
+                    input()
+                    
                     # Calculate error metrics 
                     for m in err_metrics:
                         if m.find('Delta') >= 0:

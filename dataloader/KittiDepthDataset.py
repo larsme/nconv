@@ -139,10 +139,10 @@ class KittiDepthDataset(Dataset):
         if not (self.setname == 'train' or self.setname == 'val'):
             computed_depth = sparse_depth
 
-        # Normalize the depth
-        sparse_depth = sparse_depth / self.norm_factor  #[0,1]
-        computed_depth = computed_depth / self.norm_factor  #[0,1]
-        gt_depth = gt_depth / self.norm_factor
+        # # Normalize the depth
+        # sparse_depth = sparse_depth / self.norm_factor  #[0,1]
+        # computed_depth = computed_depth / self.norm_factor  #[0,1]
+        # gt_depth = gt_depth / self.norm_factor
 
         # Expand dims into Pytorch format
         sparse_depth = np.expand_dims(sparse_depth, 0)
@@ -154,26 +154,26 @@ class KittiDepthDataset(Dataset):
         computed_depth = torch.tensor(computed_depth, dtype=torch.float)
         gt_depth = torch.tensor(gt_depth, dtype=torch.float)
 
-        # Convert depth to disparity
-        if self.invert_depth:
-            sparse_depth[sparse_depth == 0] = -1
-            sparse_depth = 1 / sparse_depth
-            sparse_depth[sparse_depth < 0] = 0
-
-            computed_depth[computed_depth == 0] = -1
-            computed_depth = 1 / computed_depth
-            computed_depth[computed_depth < 0] = 0
-
-            gt_depth[gt_depth == 0] = -1
-            gt_depth = 1 / gt_depth
-            gt_depth[gt_depth < 0] = 0
+        # # Convert depth to disparity
+        # if self.invert_depth:
+        #     sparse_depth[sparse_depth == 0] = -1
+        #     sparse_depth = 1 / sparse_depth
+        #     sparse_depth[sparse_depth < 0] = 0
+        #
+        #     computed_depth[computed_depth == 0] = -1
+        #     computed_depth = 1 / computed_depth
+        #     computed_depth[computed_depth < 0] = 0
+        #
+        #     gt_depth[gt_depth == 0] = -1
+        #     gt_depth = 1 / gt_depth
+        #     gt_depth[gt_depth < 0] = 0
 
         # Convert RGB image to tensor
         if self.load_rgb:
             rgb = np.array(rgb, dtype=np.float16)
-            rgb /= 255
-            if self.rgb2gray: rgb = np.expand_dims(rgb,0)
-            else : rgb = np.transpose(rgb,(2,0,1))
+            # rgb /= 255
+            # if self.rgb2gray: rgb = np.expand_dims(rgb,0)
+            # else : rgb = np.transpose(rgb,(2,0,1))
             rgb = torch.tensor(rgb, dtype=torch.float)
             return sparse_depth, gt_depth, computed_depth, item, rgb
         else:
