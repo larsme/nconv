@@ -175,9 +175,9 @@ class KittiDepthDataset(Dataset):
             # if self.rgb2gray: rgb = np.expand_dims(rgb,0)
             # else : rgb = np.transpose(rgb,(2,0,1))
             rgb = torch.tensor(rgb, dtype=torch.float)
-            return sparse_depth, gt_depth, computed_depth, item, rgb
+            return day_dir, drive_dir, img_idx_dir, img_source_dir, sparse_depth, gt_depth, computed_depth, item, rgb
         else:
-            return sparse_depth, gt_depth, computed_depth, item
+            return day_dir, drive_dir, img_idx_dir, img_source_dir, sparse_depth, gt_depth, computed_depth, item
 
 
 def load_velodyne_points(filename):
@@ -210,16 +210,17 @@ def read_calib_file(filepath):
     return data
 
 
-def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired_image_height=None, resize=True,
+def generate_depth_map(day, drive, frame, img_source_dir, desired_image_width=None, desired_image_height=None, resize=True,
                        vel_depth=False):
     """Generate a depth map from velodyne data
     Originally from monodepth2
     """
     import os
-    kitti_raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../data/kitti_raw')
+    kitti_raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../../data/kitti_raw')
     calib_dir = day_dir = os.path.join(kitti_raw_dir, day)
     drive_dir = os.path.join(day_dir, drive)
     velo_filename = os.path.join(drive_dir, 'velodyne_points', 'data', frame) + ".bin"
+    cam = img_source_dir.split('0')[1]
 
     # load calibration files
     cam2cam = read_calib_file(os.path.join(calib_dir, 'calib_cam_to_cam.txt'))
@@ -282,4 +283,8 @@ def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired
             # lidarmap[py, px, 1] = pc_velo[i, 3]
             # lidarmap[py, px, 2] = times[i]
 
-    return sparse_depth_map * 255
+    rgb_path = drive_dir + '/' + img_source_dir + '/data/' + frame+'.png'
+    rgb = Image.open(rgb_path).resize((desired_image_width, desired_image_height), Image.LANCZOS)
+    rgb = np.array(rgb, dtype=np.float16)
+
+    return sparse_depth_map * 255, rgb

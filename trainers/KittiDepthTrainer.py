@@ -10,15 +10,15 @@ import os
 import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # sys.path.append(BASE_DIR)
-from trainers.trainer import Trainer # from CVLPyDL repo
+from nconv.trainers.trainer import Trainer # from CVLPyDL repo
 import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
 import os.path
-from utils.AverageMeter import AverageMeter
-from utils.saveTensorToImages import saveTensorToImages
-from utils.error_metrics import MAE, RMSE, MRE, Deltas
+from nconv.utils.AverageMeter import AverageMeter
+from nconv.utils.saveTensorToImages import saveTensorToImages
+from nconv.utils.error_metrics import MAE, RMSE, MRE, Deltas
 
 err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
 
@@ -89,9 +89,13 @@ class KittiDepthTrainer(Trainer):
             
         return self.net
 
-    def return_one_prediction(self, inputs_d, inputs_rgb, original_width=None, original_height=None):
+    def return_one_prediction(self, day_dir, drive_dir, img_idx_dir, img_source_dir, original_width=None, original_height=None):
         # define the certainty
 
+        print(day_dir)
+
+        from nconv.dataloader.KittiDepthDataset import generate_depth_map
+        inputs_d, inputs_rgb = generate_depth_map(day_dir, drive_dir, img_idx_dir, img_source_dir)
 
         #assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) == 1216
 
@@ -256,43 +260,21 @@ class KittiDepthTrainer(Trainer):
                 for data in self.dataloaders[s]:
                     
                     from PIL import Image
-                    sparse_depth, gt_depth, computed_depth, item_idxs, rgb = data
+                    day_dir, drive_dir, img_idx_dir, img_source_dir, sparse_depth, gt_depth, computed_depth, item_idxs, rgb = data
                     sparse_depth = np.squeeze(sparse_depth[1, ...].cpu().data.numpy())
                     computed_depth = np.squeeze(computed_depth[1, ...].cpu().data.numpy())
                     gt_depth = np.squeeze(gt_depth[1, ...].cpu().data.numpy())
                     rgb = np.squeeze(rgb[1, ...].cpu().data.numpy())
 
+                    # outputs_computed, cout = self.return_one_prediction(day_dir[0], drive_dir[0], img_idx_dir[0], img_source_dir[0])
+                    outputs_computed, cout = self.return_one_prediction('2011_09_26', '2011_09_26_drive_0001_sync', '0000000000', 'image_02')
+                    print('predicted median: %5.2f' % (np.median(outputs_computed)))
+                    outputs = outputs_computed
+
                     import matplotlib.pyplot as plt
                     from PIL import Image
                     cmap = plt.cm.get_cmap('nipy_spectral', 256)
                     cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-
-                    q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
-                    q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
-                    print('lidar quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
-                    depth_img = cmap[
-                                np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                                :]  # depths
-                    fig = Image.fromarray(depth_img)
-                    fig.save('lidar_img', 'png')
-                    fig.show('lidar_img')
-
-                    q1_lidar = np.quantile(computed_depth[computed_depth > 0], 0.05)
-                    q2_lidar = np.quantile(computed_depth[computed_depth > 0], 0.95)
-                    print('computed lidar quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
-                    depth_img = cmap[
-                                np.ndarray.astype(np.interp(computed_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                                :]  # depths
-                    fig = Image.fromarray(depth_img)
-                    fig.save('computed_lidar_img', 'png')
-                    fig.show('computed_lidar_img')
-
-                    q1_lidar = np.quantile(gt_depth, 0.05)
-                    q2_lidar = np.quantile(gt_depth, 0.95)
-                    print('real quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
-
-                    outputs, cout = self.return_one_prediction(sparse_depth, rgb)
-                    outputs_computed, cout = self.return_one_prediction(computed_depth, rgb)
                     # gt_depth=gt_depth.to(device)
                     # outputs=outputs.to(device)
                     # cout=cout.to(device)
@@ -345,9 +327,9 @@ class KittiDepthTrainer(Trainer):
                     # Convert to depth in meters before error metrics
                     outputs[outputs < 0] = 0
                     gt_depth[gt_depth < 0] = 0
-                    outputs *= self.params['data_normalize_factor']/256
-                    outputs_computed *= self.params['data_normalize_factor']/256
-                    gt_depth *= self.params['data_normalize_factor']/256
+                    # outputs *= self.params['data_normalize_factor']/256
+                    # outputs_computed *= self.params['data_normalize_factor']/256
+                    # gt_depth *= self.params['data_normalize_factor']/256
 
                     if self.load_rgb:
                         fig = Image.fromarray(np.ndarray.astype(rgb, np.uint8))
