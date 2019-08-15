@@ -59,9 +59,9 @@ def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_
         sets = ['train', 'selval'] #  train  selval
     elif mode == 'eval':
         mode = 'eval' # train    eval
-        sets = [set_] #  train  selval
+        sets = [set_]
     else:
-        sets = []
+        sets = [set_]
 
     with torch.cuda.device(params['gpu_id']):
         # Objective function
@@ -111,3 +111,5 @@ if __name__ == "__main__":
         net = mytrainer.train()
     elif args.mode == 'eval':
         net = mytrainer.evaluate()
+    elif args.mode == 'gen':
+        mytrainer.generate()
