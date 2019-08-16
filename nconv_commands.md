@@ -14,5 +14,10 @@ python run_nconv_cnn.py -mode eval -exp exp_guided_nconv_cnn_l1
     [Delta1]: 0.68974918
     [Delta2]: 0.88703215
     [Delta3]: 0.94724762
+    
+    
+    
+    consider confidence weighted interpolation
+    initial confidence based on rounding error
 
 

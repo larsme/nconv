@@ -7,7 +7,7 @@ class Trainer(object):
     """Base trainer class. Contains functions for training and saving/loading chackpoints.
     Trainer classes should inherit from this one and overload the train_epoch function."""
 
-    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu = True, workspace_dir = None):
+    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, workspace_dir=None):
 
         self.net = net
         self.optimizer = optimizer
