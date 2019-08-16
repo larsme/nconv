@@ -20,7 +20,8 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class StructNConv2d_gy_with_d(_ConvNd):
-    def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1,
+                 bias=True, channel_first=False):
 
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
@@ -29,15 +30,17 @@ class StructNConv2d_gy_with_d(_ConvNd):
         self.eps = 1e-20
         self.pos_fn = pos_fn
         self.init_method = init_method
+        self.channel_first = channel_first
 
         # Initialize weights and bias
         self.init_parameters()
 
         if self.pos_fn is not None:
-            EnforcePos.apply(self, 'weight', pos_fn)
+            EnforcePos.apply(self, 'channel_weight', pos_fn)
+            EnforcePos.apply(self, 'spatial_weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
 
         # calculate gradients from depths
         d_up = torch.roll(d, shifts=(1), dims=(2))
@@ -62,20 +65,36 @@ class StructNConv2d_gy_with_d(_ConvNd):
         # prepare convolution
         gy_roll = self.kernel_channels.kernel_channels(gy)
         cgy_roll = self.kernel_channels.kernel_channels(cgy)
-        s_prod_roll, cs_prod_roll = self.kernel_channels.s_prod_kernel_channels(s, cs)
         cgy_prop = cgy_roll * s_prod_roll
 
-        # Normalized Convolution along spatial dimensions
-        nom = F.conv3d(cgy_prop * gy_roll, self.statial_weight, self.groups)
-        denom = F.conv3d(cgy_prop, self.statial_weight, self.groups)
-        gy_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
-        cgy_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
+        if self.channel_first:
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cgy_prop * gy_roll, self.channel_weight, self.groups)
+            denom = F.conv2d(cgy_prop, self.channel_weight, self.groups)
+            gy_channel = (nom / (denom+self.eps))
+            cgy_channel = (denom / torch.sum(self.spatial_weight))
 
-        # Normalized Convolution along spatial dimensions
-        nom = F.conv3d(cgy_spatial * gy_spatial, self.channel_weight, self.groups)
-        denom = F.conv3d(cgy_spatial, self.channel_weight, self.groups)
-        gy = nom / (denom+self.eps)
-        cgy = denom / torch.sum(self.channel_weight)
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cgy_channel * gy_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cgy_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            gy = nom / (denom+self.eps) + self.bias
+            cgy = denom / torch.sum(self.channel_weight)
+        else:
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cgy_prop * gy_roll, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cgy_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            gy_spatial = (nom / (denom+self.eps))
+            cgy_spatial = (denom / torch.sum(self.spatial_weight))
+
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cgy_spatial * gy_spatial, self.channel_weight, self.groups)
+            denom = F.conv2d(cgy_spatial, self.channel_weight, self.groups)
+            gy = nom / (denom+self.eps) + self.bias
+            cgy = denom / torch.sum(self.channel_weight)
 
         return gy*self.stride, cgy
 

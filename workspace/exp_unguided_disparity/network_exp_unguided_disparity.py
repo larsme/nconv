@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from modules.nconv import NConv2d
+from modules.NConv2D import NConv2d
 
 
 class CNN(nn.Module):

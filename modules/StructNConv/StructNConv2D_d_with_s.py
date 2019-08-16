@@ -21,7 +21,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNConv2d_d_with_s(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, bias=True):
+                 dilation=1, groups=1, bias=True, channel_first=False):
 
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels,
@@ -31,31 +31,49 @@ class StructNConv2d_d_with_s(_ConvNd):
         self.pos_fn = pos_fn
         self.init_method = init_method
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
+        self.channel_first = channel_first
 
         # Initialize weights and bias
         self.init_parameters()
 
         if self.pos_fn is not None:
-            EnforcePos.apply(self, 'weight', pos_fn)
+            EnforcePos.apply(self, 'channel_weight', pos_fn)
+            EnforcePos.apply(self, 'spatial_weight', pos_fn)
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
 
         d_roll = self.kernel_channels.kernel_channels(d)
         cd_roll = self.kernel_channels.kernel_channels(cd)
-        s_prod_roll, cs_prod_roll = self.kernel_channels.s_prod_kernel_channels(s, cs)
         cd_prop = cd_roll * s_prod_roll
 
-        # Normalized Convolution along spatial dimensions
-        nom = F.conv3d(cd_prop * d_roll, self.statial_weight, self.groups)
-        denom = F.conv3d(cd_prop, self.statial_weight, self.groups)
-        d_spatial = (nom / (denom+self.eps) + self.bias).squeeze(2)
-        cd_spatial = (denom / torch.sum(self.spatial_weight)).squeeze(2)
+        if self.channel_first:
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cd_prop * d_roll, self.channel_weight, self.groups)
+            denom = F.conv2d(cd_prop, self.channel_weight, self.groups)
+            d_channel = (nom / (denom+self.eps))
+            cd_channel = (denom / torch.sum(self.spatial_weight))
 
-        # Normalized Convolution along channel dimensions
-        nom = F.conv3d(cd_spatial * d_spatial, self.channel_weight, self.groups)
-        denom = F.conv3d(cd_spatial, self.channel_weight, self.groups)
-        d = nom / (denom+self.eps)
-        cd = denom / torch.sum(self.channel_weight)
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cd_channel * d_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cd_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            d = nom / (denom+self.eps) + self.bias
+            cd = denom / torch.sum(self.channel_weight)
+        else:
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cd_prop * d_roll, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cd_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            d_spatial = (nom / (denom+self.eps))
+            cd_spatial = (denom / torch.sum(self.spatial_weight))
+
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cd_spatial * d_spatial, self.channel_weight, self.groups)
+            denom = F.conv2d(cd_spatial, self.channel_weight, self.groups)
+            d = nom / (denom+self.eps) + self.bias
+            cd = denom / torch.sum(self.channel_weight)
 
         return d, cd
 
@@ -64,13 +82,9 @@ class StructNConv2d_d_with_s(_ConvNd):
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
-            torch.nn.init.xavier_uniform_(self.w_prop)
-            torch.nn.init.xavier_uniform_(self.w_s_from_d)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
-            torch.nn.init.kaiming_uniform_(self.w_prop)
-            torch.nn.init.kaiming_uniform_(self.w_s_from_d)
         # elif self.init_method == 'p': # Poisson
         #     mu=self.kernel_size[0]/2
         #     dist = poisson(mu)

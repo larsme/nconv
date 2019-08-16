@@ -21,7 +21,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNDeconv2D_d_with_g(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, bias=True):
+                 dilation=1, groups=1):
 
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
@@ -46,7 +46,8 @@ class StructNDeconv2D_d_with_g(_ConvNd):
         self.init_parameters()
 
         if self.pos_fn is not None:
-            EnforcePos.apply(self, 'weight', pos_fn)
+            EnforcePos.apply(self, 'spatial_weight', pos_fn)
+            EnforcePos.apply(self, 'w_grad', pos_fn)
 
 
     def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
@@ -88,11 +89,9 @@ class StructNDeconv2D_d_with_g(_ConvNd):
     def init_parameters(self):
         # Init weights
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_grad)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_grad)
         # elif self.init_method == 'p': # Poisson
@@ -107,6 +106,3 @@ class StructNDeconv2D_d_with_g(_ConvNd):
         #     w = w.repeat(self.out_channels, 1, 1, 1)
         #     w = w.repeat(1, self.in_channels, 1, 1)
         #     self.weight.data = w + torch.rand(w.shape)
-
-        # Init bias
-        self.bias = torch.nn.Parameter(torch.zeros(self.out_channels)+0.01)

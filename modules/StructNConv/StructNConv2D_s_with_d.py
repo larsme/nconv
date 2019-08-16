@@ -20,7 +20,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNConv2d_s_with_d(_ConvNd):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k',
-                 stride=1, padding=0, dilation=1, groups=1, bias=True):
+                 stride=1, padding=0, dilation=1, groups=1, bias=True, channel_first=False):
         
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels, kernel_size, stride, padding, dilation,
@@ -29,40 +29,64 @@ class StructNConv2d_s_with_d(_ConvNd):
         self.eps = 1e-20
         self.pos_fn = pos_fn
         self.init_method = init_method
+        self.channel_first = channel_first
         
         # Initialize weights and bias
         self.init_parameters()
 
-        if self.pos_fn is not None :
-            EnforcePos.apply(self, 'weight', pos_fn)
+        if self.pos_fn is not None:
+            EnforcePos.apply(self, 'channel_weight', pos_fn)
+            EnforcePos.apply(self, 'spatial_weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
 
-        
-        
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs):
 
         # calculate smoothness from depths
-        _, j_max = F.max_pool2d(d * cd, kernel_size=self.kernel_size, stride=self.stride, return_indices=True, padding=self.padding)
-        _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=self.kernel_size, stride=self.stride, return_indices=True, padding=self.padding)
+        _, j_max = F.max_pool2d(d * cd, kernel_size=self.kernel_size, stride=self.stride,
+                                return_indices=True, padding=self.padding)
+        _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=self.kernel_size, stride=self.stride,
+                                return_indices=True, padding=self.padding)
 
         min_div_max = torch.abs(d[j_max] / (d[j_min] + self.eps))
 
-        s_from_d = (1 - self.w_s_from_d[0] - self.w_s_from_d[1]) * min_div_max + self.w_s_from_d[0] * min_div_max**2 + self.w_s_from_d[1] * min_div_max**3 
+        s_from_d = (1 - self.w_s_from_d[0] - self.w_s_from_d[1]) * min_div_max \
+            + self.w_s_from_d[0] * min_div_max**2 \
+            + self.w_s_from_d[1] * min_div_max**3
         cs_from_d = cd[j_max] * cd[j_min]
 
-        s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d)
-        cs = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
+        s_prop = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d)
+        cs_prop = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
 
+        if self.channel_first:
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cs_prop * s_prop, self.channel_weight, self.groups)
+            denom = F.conv2d(cs_prop, self.channel_weight, self.groups)
+            s_channel = (nom / (denom+self.eps))
+            cs_channel = (denom / torch.sum(self.spatial_weight))
 
-        # Normalized Convolution
-        nom = F.conv2d(cs, self.weight, None, self.stride,
-                        self.padding, self.dilation, self.groups)        
-        denom = F.conv2d(s*cs, self.weight, None, self.stride,
-                        self.padding, self.dilation, self.groups)
-        nconv = nom / (denom+self.eps)+ self.bias
-        cout = denom / torch.sum(self.weight)
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cs_channel * s_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cs_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            s = nom / (denom+self.eps) + self.bias
+            cs = denom / torch.sum(self.channel_weight)
+        else:
+            # Normalized Convolution along spatial dimensions
+            nom = F.conv2d(cs_prop * s_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                           padding=self.padding, dilation=self.dilation).squeeze(2)
+            denom = F.conv2d(cs_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+                             padding=self.padding, dilation=self.dilation).squeeze(2)
+            s_spatial = (nom / (denom+self.eps))
+            cs_spatial = (denom / torch.sum(self.spatial_weight))
 
-        return nconv, cout
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cs_spatial * s_spatial, self.channel_weight, self.groups)
+            denom = F.conv2d(cs_spatial, self.channel_weight, self.groups)
+            s = nom / (denom+self.eps) + self.bias
+            cs = denom / torch.sum(self.channel_weight)
+
+        return s, cs
 
     
     def init_parameters(self):

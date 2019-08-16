@@ -20,7 +20,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class StructNDeconv2d_gx_with_d(_ConvNd):
-    def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, pos_fn='softplus', init_method='k', groups=1):
 
         # Call _ConvNd constructor
         super(_ConvNd, self).__init__(in_channels, out_channels, False, 0, groups, bias,
@@ -34,18 +34,18 @@ class StructNDeconv2d_gx_with_d(_ConvNd):
         self.init_parameters()
 
         if self.pos_fn is not None:
-            EnforcePos.apply(self, 'weight', pos_fn)
+            EnforcePos.apply(self, 'spatial_weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
 
     def forward(self, d, cd, gx, cgx):
 
         # calculate gradients from depths
-        d_left = torch.roll(d, shifts=(1), dims=(3))
-        cd_left = torch.roll(cd, shifts=(1), dims=(3))
+        d_left = torch.roll(d, shifts=1, dims=3)
+        cd_left = torch.roll(cd, shifts=1, dims=3)
         cd_left[:, :, :, 0] = 0
 
-        d_right = torch.roll(d, shifts=(-1), dims=(3))
-        cd_right = torch.roll(cd, shifts=(-1), dims=(3))
+        d_right = torch.roll(d, shifts=(-1), dims=3)
+        cd_right = torch.roll(cd, shifts=(-1), dims=3)
         cd_right[:, :, :, -1] = 0
 
         cgx_from_ds = cd_left * cd_right
@@ -74,11 +74,9 @@ class StructNDeconv2d_gx_with_d(_ConvNd):
     def init_parameters(self):
         # Init weights
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_prop)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_prop)
         # elif self.init_method == 'p': # Poisson
@@ -93,6 +91,3 @@ class StructNDeconv2d_gx_with_d(_ConvNd):
         #     w = w.repeat(self.out_channels, 1, 1, 1)
         #     w = w.repeat(1, self.in_channels, 1, 1)
         #     self.weight.data = w + torch.rand(w.shape)
-
-        # Init bias
-        self.bias = torch.nn.Parameter(torch.zeros(self.out_channels)+0.01)

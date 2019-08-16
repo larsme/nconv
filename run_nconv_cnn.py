@@ -29,11 +29,8 @@ cudnn.enabled = True
 cudnn.benchmark = True
 
 
-
-
-
 def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_ws_path ='workspace'):
-    exp_dir = os.path.join(BASE_DIR, training_ws_path, exp)
+    exp_dir = os.path.join(BASE_DIR, training_ws_path)
 
     # Add the experiment's folder to python path
 
@@ -48,7 +45,7 @@ def load_net(exp, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_
     dataloaders, dataset_sizes = KittiDepthDataloader(params)
 
     # Import the network file
-    f = importlib.import_module(training_ws_path+'.'+exp+'.network_'+exp)
+    f = importlib.import_module((training_ws_path+'.'+exp).replace("/", "."))
     model = f.CNN(pos_fn = params['enforce_pos_weights']).to(device)
 
     # Import the trainer
@@ -95,7 +92,8 @@ if __name__ == "__main__":
     # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', action='store', dest='mode', help='"eval" or "train" mode')
-    parser.add_argument('-exp', action='store', dest='exp', help='Experiment name as in workspace directory')
+    parser.add_argument('-exp', action='store', dest='exp', help='Python file in workspace directory')
+    parser.add_argument('-ws_path', action='store', dest='ws_path', help='Workspace directory')
     parser.add_argument('-checkpoint_num', action='store', dest='checkpoint_num', default=-1, type=int, nargs='?',
                         help='Checkpoint number to load')
     parser.add_argument('-set', action='store', dest='set_', default='selval', type=str, nargs='?',
@@ -104,7 +102,7 @@ if __name__ == "__main__":
 
     # Path to the workspace directory
 
-    mytrainer = load_net(args.exp, args.mode, args.set_, args.checkpoint_num)
+    mytrainer = load_net(args.exp, args.mode, args.set_, args.checkpoint_num, args.ws_path)
 
     if args.mode == 'train':
         # train the network

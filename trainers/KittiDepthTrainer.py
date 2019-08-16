@@ -245,7 +245,6 @@ class KittiDepthTrainer(Trainer):
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
                 # Iterate over data.
                 for data in self.dataloaders[s]:
-
                     if self.load_rgb:
                         sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
                         sparse_depth = sparse_depth.to(device)
