@@ -18,9 +18,8 @@ from scipy import signal
 from modules.NConv2D import EnforcePos
 
 class StructNMaxPool2D_dg(nn.modules.Module):
-    def __init__(self, kernel_size, init_method='k', stride=1, padding=0, dilation=1):
+    def __init__(self, kernel_size, stride=1, padding=0, dilation=1):
         super(StructNMaxPool2D_dg, self).__init__()
-        self.init_method = init_method
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
