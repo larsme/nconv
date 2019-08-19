@@ -18,14 +18,14 @@ import os as os
 
 class CNN(nn.Module):
 
-    def __init__(self, pos_fn=None):
+    def __init__(self, params):
         super().__init__()
 
         dir = os.path.dirname(os.path.abspath(__file__))
         # Import the unguided network
         sys.path.append(dir+'/unguided_network_pretrained')
         f = importlib.import_module('unguided_network')
-        self.d_net = f.CNN()
+        self.d_net = f.CNN(params)
         checkpoint_dict = torch.load(dir+'/unguided_network_pretrained/CNN_ep0005.pth.tar')
         self.d_net.load_state_dict(checkpoint_dict['net'])
         

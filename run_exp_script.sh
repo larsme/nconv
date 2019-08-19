@@ -1,19 +1,8 @@
 #!/bin/bash
 
-for exp in exp_guided_enc_dec
-do
-python run-nconv-cnn.py -mode train -exp "$exp"
-
-for epoch in {1..3}
-do
-
-echo $"Evaluating Exp: $exp , Epoch: $epoch " 
-
-python run-nconv-cnn.py -mode eval -exp "$exp" -chkpt "$epoch"
-
-done
-python run-nconv-cnn.py -mode eval -exp "$exp" -chkpt -1 -set val 
-done
-exit 0
+python run_nconv_cnn.py -mode train -exp Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Default
+python run_nconv_cnn.py -mode train -exp Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Deconv
+python run_nconv_cnn.py -mode train -exp Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir NoBias
+python run_nconv_cnn.py -mode train -exp Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Stride
 
 

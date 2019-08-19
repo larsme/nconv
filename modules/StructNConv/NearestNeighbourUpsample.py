@@ -29,9 +29,8 @@ class NearestNeighbourUpsample(nn.modules.Module):
         self.padding = padding
 
     def forward(self, d, cd):
-        output_size = torch.zeros((d.size(2)-1)*self.stride-(self.kernel_size-1)*self.dilation+1,
-                                 (d.size(3)-1)*self.stride-(self.kernel_size-1)*self.dilation+1)
-
+        output_size = ((d.size(2)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1,
+                       (d.size(3)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1)
         d = F.interpolate(d, output_size, mode='nearest')
         cd = F.interpolate(cd, output_size, mode='nearest')
         return d, cd

@@ -79,7 +79,7 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
 
         # get g_prop from gx, s at origin and target
         gx_roll = self.kernel_channels.kernel_channels(gx)
-        cgx_roll = self.kernel_channels.kernel_channel(cgx)
+        cgx_roll = self.kernel_channels.kernel_channels(cgx)
         gy_roll = self.kernel_channels.kernel_channels(gy)
         cgy_roll = self.kernel_channels.kernel_channels(cgy)
 
@@ -114,18 +114,18 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
 
         if self.channel_first:
             # Normalized Convolution along channel dimensions
-            nom = F.conv3d(cd_prop * d_prop, self.channel_weight, self.groups)
-            denom = F.conv3d(cd_prop, self.channel_weight, self.groups)
+            nom = F.conv3d(cd_prop * d_prop, self.channel_weight, roups=self.groups)
+            denom = F.conv3d(cd_prop, self.channel_weight, groups=self.groups)
             d_channel = (nom / (denom+self.eps))
-            cd_channel = (denom / torch.sum(self.spatial_weight))
+            cd_channel = (denom / torch.sum(self.channel_weight))
 
             # Normalized Convolution along spatial dimensions
-            nom = F.conv3d(cd_channel * d_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv3d(cd_channel * d_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
-            denom = F.conv3d(cd_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv3d(cd_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             d = nom / (denom+self.eps)
-            cd = denom / torch.sum(self.channel_weight)
+            cd = denom / torch.sum(self.spatial_weight)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv3d(cd_prop * d_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,

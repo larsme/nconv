@@ -69,7 +69,7 @@ class KittiDepthTrainer(Trainer):
             # Decay Learning Rate 
             self.lr_scheduler.step() # LR decay
             
-            print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']), end=' ')
+            print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
 
             
             # Train the epoch
@@ -176,7 +176,9 @@ class KittiDepthTrainer(Trainer):
           
         for s in self.sets:
             # Iterate over data.
+            i = 0
             for data in self.dataloaders[s]:
+                print('train batch %d of %d on %s set' % (i, len(self.dataloaders[s]), s))
                 if self.load_rgb:
                     sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
                     sparse_depth = sparse_depth.to(device)
@@ -194,15 +196,16 @@ class KittiDepthTrainer(Trainer):
                 loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
 
                 # backward + optimize only if in training phase
-                if s == 'train':                    
-                    loss.backward()   
-                    self.optimizer.step()            
-                
+                if s == 'train':
+                    loss.backward()
+                    self.optimizer.step()
+
                 self.optimizer.zero_grad()
-    
+
                 # statistics
                 loss_meter[s].update(loss.item(), sparse_depth.size(0))
-            
+                i += 1
+
             print('[{}] Loss: {:.8f}'.format(s,  loss_meter[s].avg), end=' ')
 
         return loss_meter
@@ -243,8 +246,10 @@ class KittiDepthTrainer(Trainer):
         with torch.no_grad():
             for s in self.sets:
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
+                i = 0
                 # Iterate over data.
                 for data in self.dataloaders[s]:
+                    print('eval batch %d of %d' % (i, len(self.dataloaders[s])))
                     if self.load_rgb:
                         sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
                         sparse_depth = sparse_depth.to(device)
@@ -303,6 +308,8 @@ class KittiDepthTrainer(Trainer):
                                                                                s + '_cert_' + 'epoch_' + str(
                                                                                    self.epoch - 1)))
 
+                    i += 1
+
                 print('Evaluation results on [{}]:\n============================='.format(s))
                 print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
@@ -315,6 +322,7 @@ class KittiDepthTrainer(Trainer):
                             s, str(self.epoch - 1)))
                     text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
                     for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
+
 
 ####### Generation Function #######
 

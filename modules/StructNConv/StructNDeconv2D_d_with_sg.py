@@ -87,9 +87,9 @@ class StructNDeconv2D_d_with_sg(torch.nn.Module):
         cd_prop = cd_roll * (1 + self.w_grad * cg_prop) / (1+self.w_grad) * s_prod_roll
 
         # Normalized Deconvolution along spatial dimensions
-        nom = F.conv3d(cd_prop * d_prop, self.statial_weight, groups=self.in_channels).squeeze(2)
-        denom = F.conv3d(cd_prop, self.statial_weight, groups=self.in_channels).squeeze(2)
-        cdenom = F.conv3d(deconv_present, self.statial_weight, groups=self.in_channels).squeeze(2)
+        nom = F.conv3d(cd_prop * d_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
+        denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
+        cdenom = F.conv3d(deconv_present, self.spatial_weight, groups=self.in_channels).squeeze(2)
         d = (nom / (denom+self.eps) + self.bias)
         cd = (denom / (cdenom+self.eps))
 

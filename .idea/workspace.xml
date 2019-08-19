@@ -2,10 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/modules/StructNConv/NearestNeighbourUpsample_g_with_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Deconv3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Deconv4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Default3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Default4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/NoBias3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/NoBias4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Stride2/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Stride3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Stride4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default2/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Old/params.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/KernelChannels.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/KernelChannels.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/NearestNeighbourUpsample.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/NearestNeighbourUpsample.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_s.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_sg.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_sg.py" afterDir="false" />
@@ -14,24 +27,23 @@
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_d.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_ds.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_gy_with_ds.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_s_with_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNConv2D_s_with_d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_g.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_g.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_s.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_sg.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_d_with_sg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_ds.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gx_with_ds.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_ds.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNDeconv2D_gy_with_ds.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d_with_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_d_with_s.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg_with_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_dg_with_s.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_s.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/StructNConv/StructNMaxPool2D_s.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_nconv_cnn.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_nconv_cnn.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Unguided_d.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Unguided_d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/exp_unguided_sd/network_exp_unguided_ds.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/exp_unguided_sd/params.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default2/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default2/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default3/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default3/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default4/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default4/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d2/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d2/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d3/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d3/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d4/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/NoBias_d4/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default/error_selval_epoch_1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Old/error_selval_epoch_1.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default/error_selval_epoch_2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Old/error_selval_epoch_2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default/error_selval_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Old/error_selval_epoch_3.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/exp_unguided_depth/Default/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/exp_unguided_depth/Old/error_val_epoch_3.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,19 +64,23 @@
   <component name="ProjectId" id="1Oggb7r8ZdjQ5Mc6M0vf98E3yDU" />
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/modules/StructNConv" />
-    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace/exp_unguided_depth" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/UnguidedD" />
-      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\workspace\StructNConv\exp_unguided_sd" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\Lars_AMD\Dropbox\Uni\Masterarbeit\cloned repos\nconv\modules\StructNConv" />
-      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\modules\StructNConv" />
-      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\workspace\StructNConv" />
-      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth" />
+      <recent name="$PROJECT_DIR$/modules/StructNConv" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg" />
+      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Default4" />
+      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Default3" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Default" />
+      <recent name="$PROJECT_DIR$/workspace/exp_guided_enc_dec/Default" />
+      <recent name="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l1/Default" />
+      <recent name="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l2" />
+      <recent name="$PROJECT_DIR$/workspace/exp_guided_nconv_cnn_l2/Default" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -145,6 +161,21 @@
           <url>file://$PROJECT_DIR$/run_nconv_cnn.py</url>
           <line>9</line>
           <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/run_nconv_cnn.py</url>
+          <line>123</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/modules/StructNConv/StructNConv2D_d_with_g.py</url>
+          <line>81</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Unguided_dg.py</url>
+          <line>8</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

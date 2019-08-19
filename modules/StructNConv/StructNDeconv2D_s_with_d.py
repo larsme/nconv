@@ -18,10 +18,10 @@ from scipy import signal
 from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
-class StructNDeconv2d_s_with_d(torch.nn.Module):
+class StructNDeconv2D_s_with_d(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, use_bias=True):
-        super(StructNDeconv2d_s_with_d, self).__init__()
+        super(StructNDeconv2D_s_with_d, self).__init__()
 
         self.eps = 1e-20
         self.init_method = init_method
@@ -84,9 +84,9 @@ class StructNDeconv2d_s_with_d(torch.nn.Module):
         s_prop = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d)
         cs_prop = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
 
-        nom = F.conv_transpose2d(cs_prop * s_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+        nom = F.conv_transpose2d(cs_prop * s_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                                  padding=self.padding, dilation=self.dilation)
-        denom = F.conv_transpose2d(cs_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+        denom = F.conv_transpose2d(cs_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                                    padding=self.padding, dilation=self.dilation)
         cdenom = F.conv_transpose2d(torch.ones_like(cs), self.spatial_weight, groups=self.in_channels,
                                     stride=self.stride, padding=self.padding, dilation=self.dilation)

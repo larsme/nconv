@@ -19,10 +19,10 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2d_gx_with_ds(torch.nn.Module):
+class StructNDeconv2D_gx_with_ds(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, use_bias=False):
-        super(StructNDeconv2d_gx_with_ds, self).__init__()
+        super(StructNDeconv2D_gx_with_ds, self).__init__()
 
         self.eps = 1e-20
         self.init_method = init_method
@@ -91,9 +91,9 @@ class StructNDeconv2d_gx_with_ds(torch.nn.Module):
         cgx_prop = cgx_roll * s_prod_roll
 
         # Normalized Deconvolution along spatial dimensions
-        nom = F.conv3d(cgx_prop * gx_roll, self.statial_weight, groups=self.in_channels).squeeze(2)
-        denom = F.conv3d(cgx_prop, self.statial_weight, groups=self.in_channels).squeeze(2)
-        cdenom = F.conv3d(deconv_present, self.statial_weight, groups=self.in_channels).squeeze(2)
+        nom = F.conv3d(cgx_prop * gx_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
+        denom = F.conv3d(cgx_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
+        cdenom = F.conv3d(deconv_present, self.spatial_weight, groups=self.in_channels).squeeze(2)
         gx = (nom / (denom+self.eps) + self.bias)
         cgx = (denom / (cdenom+self.eps))
 

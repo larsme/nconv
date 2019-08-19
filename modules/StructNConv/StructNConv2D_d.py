@@ -72,30 +72,30 @@ class StructNConv2D_d(torch.nn.Module):
 
         if self.channel_first:
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cd * d, self.channel_weight, self.groups)
-            denom = F.conv2d(cd, self.channel_weight, self.groups)
+            nom = F.conv2d(cd * d, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cd, self.channel_weight, groups=self.groups)
             d_channel = (nom / (denom+self.eps))
-            cd_channel = (denom / torch.sum(self.spatial_weight))
+            cd_channel = (denom / torch.sum(self.channel_weight))
 
             # Normalized Convolution along spatial dimensions
-            nom = F.conv2d(cd_channel * d_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv2d(cd_channel * d_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation)
-            denom = F.conv2d(cd_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv2d(cd_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation)
             d = nom / (denom+self.eps)
-            cd = denom / torch.sum(self.channel_weight)
+            cd = denom / torch.sum(self.spatial_weight)
         else:
             # Normalized Convolution along spatial dimensions
-            nom = F.conv2d(cd * d, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv2d(cd * d, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation)
-            denom = F.conv2d(cd, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv2d(cd, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation)
             d_spatial = (nom / (denom+self.eps))
             cd_spatial = (denom / torch.sum(self.spatial_weight))
 
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cd_spatial * d_spatial, self.channel_weight, self.groups)
-            denom = F.conv2d(cd_spatial, self.channel_weight, self.groups)
+            nom = F.conv2d(cd_spatial * d_spatial, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cd_spatial, self.channel_weight, groups=self.groups)
             d = nom / (denom+self.eps)
             cd = denom / torch.sum(self.channel_weight)
         if self.use_bias:

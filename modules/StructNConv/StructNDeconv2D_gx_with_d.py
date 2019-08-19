@@ -19,10 +19,10 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2d_gx_with_d(torch.nn.Module):
+class StructNDeconv2D_gx_with_d(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, use_bias=False):
-        super(StructNDeconv2d_gx_with_d, self).__init__()
+        super(StructNDeconv2D_gx_with_d, self).__init__()
 
         self.eps = 1e-20
         self.init_method = init_method
@@ -38,11 +38,11 @@ class StructNDeconv2d_gx_with_d(torch.nn.Module):
         self.pos_fn = pos_fn
 
         # Define Parameters
-        self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
-        self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1,
+        self.w_prop = torch.nn.Parameter(data=torch.zeros(1, self.in_channels, 1, 1))
+        self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.in_channels, 1,
                                                                    self.kernel_size, self.kernel_size))
         if use_bias:
-            self.bias = torch.nn.Parameter(data=torch.Tensor(1, self.out_channels, 1, 1))
+            self.bias = torch.nn.Parameter(data=torch.zeros(1, self.out_channels, 1, 1))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier

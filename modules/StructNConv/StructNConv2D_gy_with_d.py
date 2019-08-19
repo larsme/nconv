@@ -19,10 +19,10 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNConv2d_gy_with_d(torch.nn.Module):
+class StructNConv2D_gy_with_d(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, use_bias=True, channel_first=False):
-        super(StructNConv2d_gy_with_d, self).__init__()
+        super(StructNConv2D_gy_with_d, self).__init__()
 
         self.eps = 1e-20
         self.init_method = init_method
@@ -39,19 +39,19 @@ class StructNConv2d_gy_with_d(torch.nn.Module):
         self.pos_fn = pos_fn
 
         # Define Parameters
-        self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
+        self.w_prop = torch.nn.Parameter(data=torch.zeros(1, self.in_channels, 1, 1))
         if self.channel_first:
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels,
+            self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
                                                                        1, 1))
-            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1,
+            self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, 1,
                                                                        self.kernel_size, self.kernel_size))
         else:
-            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1,
+            self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.in_channels, 1,
                                                                        self.kernel_size, self.kernel_size))
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels,
+            self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
                                                                        1, 1))
         if use_bias:
-            self.bias = torch.nn.Parameter(data=torch.Tensor(1, self.out_channels, 1, 1))
+            self.bias = torch.nn.Parameter(data=torch.zeros(1, self.out_channels, 1, 1))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
@@ -95,30 +95,30 @@ class StructNConv2d_gy_with_d(torch.nn.Module):
 
         if self.channel_first:
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cgy_prop * gy_prop, self.channel_weight, self.groups)
-            denom = F.conv2d(cgy_prop, self.channel_weight, self.groups)
+            nom = F.conv2d(cgy_prop * gy_prop, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cgy_prop, self.channel_weight, groups=self.groups)
             gy_channel = (nom / (denom+self.eps))
-            cgy_channel = (denom / torch.sum(self.spatial_weight))
+            cgy_channel = (denom / torch.sum(self.channel_weight))
 
             # Normalized Convolution along spatial dimensions
-            nom = F.conv2d(cgy_channel * gy_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv2d(cgy_channel * gy_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
-            denom = F.conv2d(cgy_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv2d(cgy_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             gy = nom / (denom+self.eps)
-            cgy = denom / torch.sum(self.channel_weight)
+            cgy = denom / torch.sum(self.spatial_weight)
         else:
             # Normalized Convolution along spatial dimensions
-            nom = F.conv2d(cgy_prop * gy_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv2d(cgy_prop * gy_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
-            denom = F.conv2d(cgy_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv2d(cgy_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             gy_spatial = (nom / (denom+self.eps))
             cgy_spatial = (denom / torch.sum(self.spatial_weight))
 
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cgy_spatial * gy_spatial, self.channel_weight, self.groups)
-            denom = F.conv2d(cgy_spatial, self.channel_weight, self.groups)
+            nom = F.conv2d(cgy_spatial * gy_spatial, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cgy_spatial, self.channel_weight, groups=self.groups)
             gy = nom / (denom+self.eps)
             cgy = denom / torch.sum(self.channel_weight)
 

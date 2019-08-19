@@ -32,7 +32,8 @@ def KittiDepthDataloader(params):
 
     train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
 
-    image_datasets['train'] = KittiDepthDataset(train_kitti_depth_dir, setname='train',  transform=train_transform, norm_factor = norm_factor, invert_depth = invert_depth,
+    image_datasets['train'] = KittiDepthDataset(train_kitti_depth_dir, setname='train',  transform=train_transform,
+                                                norm_factor=norm_factor, invert_depth=invert_depth,
     load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
     
     # Select the desired number of images from the training set 
@@ -40,7 +41,8 @@ def KittiDepthDataloader(params):
         image_datasets['train'].sparse_depth_paths = image_datasets['train'].sparse_depth_paths[0:params['train_on']]
         image_datasets['train'].gt_depth_paths = image_datasets['train'].gt_depth_paths[0:params['train_on']]
     
-    dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'], num_workers=4)
+    dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
+                                      num_workers=4)
     dataset_sizes['train'] = {len(image_datasets['train'])}
     
     
@@ -49,19 +51,23 @@ def KittiDepthDataloader(params):
     val_kitti_depth_dir = os.path.join(kitti_depth_dir, 'val')
     
     val_transform = transforms.Compose([transforms.CenterCrop((352,1216))])
-    image_datasets['val'] = KittiDepthDataset(val_kitti_depth_dir, setname='val', transform=val_transform, norm_factor = norm_factor, invert_depth = invert_depth,
-    load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
-    dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'], num_workers=4)
+    image_datasets['val'] = KittiDepthDataset(val_kitti_depth_dir, setname='val', transform=val_transform,
+                                              norm_factor=norm_factor, invert_depth=invert_depth,
+                                              load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
+    dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
+                                    num_workers=4)
     dataset_sizes['val'] = {len(image_datasets['val'])}
 
 
 ###### Selected Validation set ######
     selval_kitti_depth_dir = os.path.join(kitti_depth_dir, 'val_selection_cropped')
 
-    image_datasets['selval'] = KittiDepthDataset(selval_kitti_depth_dir, setname='selval', transform=None, norm_factor = norm_factor, invert_depth = invert_depth,
+    image_datasets['selval'] = KittiDepthDataset(selval_kitti_depth_dir, setname='selval', transform=None,
+                                                 norm_factor=norm_factor, invert_depth=invert_depth,
                                                  load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
 
-    dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'], num_workers=4)
+    dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'],
+                                       num_workers=4)
     dataset_sizes['selval'] = {len(image_datasets['selval'])}
 
 
@@ -69,10 +75,12 @@ def KittiDepthDataloader(params):
 ###### Selected test set ######
     test_kitti_depth_dir = os.path.join(kitti_depth_dir, 'test_depth_completion_anonymous')
     
-    image_datasets['test'] = KittiDepthDataset(test_kitti_depth_dir, setname='test', transform=None, norm_factor = norm_factor, invert_depth = invert_depth,
-    load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
+    image_datasets['test'] = KittiDepthDataset(test_kitti_depth_dir, setname='test', transform=None,
+                                               norm_factor=norm_factor, invert_depth=invert_depth,
+                                               load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray)
     
-    dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'], num_workers=4)
+    dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'],
+                                     num_workers=4)
     dataset_sizes['test'] = {len(image_datasets['test'])}
 
     print(dataset_sizes)

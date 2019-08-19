@@ -19,10 +19,10 @@ from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2d_d_with_s(torch.nn.Module):
+class StructNDeconv2D_d_with_s(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
                  dilation=1, groups=1, use_bias=False):
-        super(StructNDeconv2d_d_with_s, self).__init__()
+        super(StructNDeconv2D_d_with_s, self).__init__()
 
         self.eps = 1e-20
         self.init_method = init_method
@@ -56,7 +56,7 @@ class StructNDeconv2d_d_with_s(torch.nn.Module):
         if self.pos_fn is not None:
             EnforcePos.apply(self, 'spatial_weight', pos_fn)
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
+    def forward(self, d, cd, s, cs, s_prod_roll):
 
         d_roll = self.kernel_channels.deconv_kernel_channels(d)
         cd_roll = self.kernel_channels.deconv_kernel_channels(cd)

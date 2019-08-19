@@ -19,75 +19,72 @@ class KernelChannels(nn.modules.Module):
         self.padding = padding
         self.dilation = dilation
 
-    def kernel_channels(self, tensor):
+    def kernel_channels(self, x):
         '''
-        :param tensor: Input
+        :param x: Input
         input to unroll, 4 dimensional
         :return:
         5 dimensional, neighbouring elements as additional channels in dim 2 (of 0 to 4)
         [[[[1, 2, 3],
-        [4, 5, 6], 
+        [4, 5, 6],
         [7, 8, 9]]]] -> [1, 2, 3, 4, 5, 6, 7, 8, 9] for middle element with kernel size 3
         '''
 
-        tensor = F.pad(tensor, (self.padding, self.padding, self.padding, self.padding)).unsqueeze(2)
-        tensor_res = torch.zeros(tensor.size(0), tensor.size(1), 0,
-                                 (tensor.size(3)-(self.dilation*self.kernel_size-1)-1)/self.stride+1,
-                                 (tensor.size(4)-(self.dilation*self.kernel_size-1)-1)/self.stride+1)
+        x = F.pad(x, [self.padding, self.padding, self.padding, self.padding])
+        x_res = torch.Tensor(x.size(0), x.size(1), self.kernel_size**2,
+                             int((x.size(2)-(self.dilation*self.kernel_size-1)-1)/self.stride+1),
+                             int((x.size(3)-(self.dilation*self.kernel_size-1)-1)/self.stride+1))
 
         for down_offset in range(0, self.kernel_size*self.dilation, self.dilation):
             for right_offset in range(0, self.kernel_size*self.dilation, self.dilation):
-                tensor_res = torch.cat(tensor_res, tensor[:, :, :,
-                                                          down_offset : self.stride
-                                                          : tensor_res.size(3) * self.stride + down_offset,
-                                                          right_offset : self.stride
-                                                          : tensor_res.size(3) * self.stride + right_offset])
+                x_res[:, :, down_offset*self.kernel_size + right_offset, :, :] \
+                    = x[:, :, down_offset: x_res.size(3) * self.stride + down_offset: self.stride,
+                        right_offset: x_res.size(4) * self.stride + right_offset: self.stride]
 
-        return tensor_res
+        return x_res
 
-    def deconv_kernel_channels(self, tensor):
+    def deconv_kernel_channels(self, x):
         '''
-        :param tensor: Input
+        :param x: Input
         input to unroll, 4 dimensional
         :return:
         5 dimensional, neighbouring elements as additional channels in dim 2 (of 0 to 4)
         '''
 
-        tensor = tensor.unsqueeze(2)
-        tensor_res = torch.zeros(tensor.size(0), tensor.size(1), 0,
-                                 (tensor.size(3)-1)*self.stride-(self.kernel_size-1)*self.dilation+1,
-                                 (tensor.size(4)-1)*self.stride-(self.kernel_size-1)*self.dilation+1)
+        x = x.unsqueeze(2)
+        x_res = torch.zeros(x.size(0), x.size(1), 0,
+                                 (x.size(3)-1)*self.stride-(self.kernel_size-1)*self.dilation+1,
+                                 (x.size(4)-1)*self.stride-(self.kernel_size-1)*self.dilation+1)
 
         for down_offset in range(self.kernel_size*self.dilation-1, 0, -self.dilation):
             for right_offset in range(self.kernel_size*self.dilation-1, 0, -self.dilation):
-                output_tensor = torch.zeros(tensor_res.size(0), tensor_res.size(1), 1,
-                                            tensor_res.size(3), tensor_res.size(4))
-                output_tensor[:, :, :, down_offset : self.stride : tensor_res.size(3),
-                              right_offset : self.stride : tensor_res.size(3)] = tensor
-                tensor_res = torch.cat(tensor_res, output_tensor)
+                output_x = torch.zeros(x_res.size(0), x_res.size(1), 1,
+                                            x_res.size(3), x_res.size(4))
+                output_x[:, :, :, down_offset: x_res.size(3): self.stride,
+                              right_offset: x_res.size(3): self.stride] = x
+                x_res = torch.cat(x_res, output_x)
 
-        return tensor_res[:, :, :, self.padding:-self.padding-1, self.padding:-self.padding-1]
+        return x_res[:, :, :, self.padding:-self.padding-1, self.padding:-self.padding-1]
 
-    def deconv_kernel_channels_const(self, tensor, initialization_value):
+    def deconv_kernel_channels_const(self, x, initialization_value):
         '''
-        :param tensor: Input
+        :param x: Input
         input to unroll, 4 dimensional
         :param initialization_value: default value for remaining elements
         :return:
         5 dimensional, neighbouring elements as additional channels in dim 2 (of 0 to 4)
         '''
 
-        tensor = tensor.unsqueeze(2)
-        tensor_res = torch.zeros(tensor.size(0), tensor.size(1), 0,
-                                 (tensor.size(3)-1)*self.stride-(self.kernel_size-1)*self.dilation+1,
-                                 (tensor.size(4)-1)*self.stride-(self.kernel_size-1)*self.dilation+1)
+        x = x.unsqueeze(2)
+        x_res = torch.zeros(x.size(0), x.size(1), 0,
+                                 (x.size(3)-1)*self.stride-(self.kernel_size-1)*self.dilation+1,
+                                 (x.size(4)-1)*self.stride-(self.kernel_size-1)*self.dilation+1)
 
         for down_offset in range(self.kernel_size*self.dilation-1, 0, -self.dilation):
             for right_offset in range(self.kernel_size*self.dilation-1, 0, -self.dilation):
-                output_tensor = initialization_value * torch.ones(tensor_res.size(0), tensor_res.size(1), 1,
-                                                                  tensor_res.size(3), tensor_res.size(4))
-                output_tensor[:, :, :, down_offset : self.stride : tensor_res.size(3),
-                              right_offset : self.stride : tensor_res.size(3)] = tensor
-                tensor_res = torch.cat(tensor_res, output_tensor)
+                output_x = initialization_value * torch.ones(x_res.size(0), x_res.size(1), 1,
+                                                                  x_res.size(3), x_res.size(4))
+                output_x[:, :, :, down_offset: x_res.size(3): self.stride, right_offset: x_res.size(3): self.stride] = x
+                x_res = torch.cat(x_res, output_x)
 
-        return tensor_res[:, :, :, self.padding:-self.padding-1, self.padding:-self.padding-1]
+        return x_res[:, :, :, self.padding:-self.padding-1, self.padding:-self.padding-1]

@@ -17,70 +17,88 @@ from modules.StructNConv.StructNDeconv2D_d import StructNDeconv2D_d
 from modules.StructNConv.NearestNeighbourUpsample import NearestNeighbourUpsample
 
 
-class Unguided_d(nn.modules.Module):
+class CNN(nn.modules.Module):
 
-    def __init__(self, pos_fn=None, num_channels=5, maxpool_d=False, nn_upsample_d=False):
+    def __init__(self, params):
+        pos_fn = params['enforce_pos_weights']
+        num_channels = params['num_channels']
+        maxpool_d = params['maxpool_d']
+        nn_upsample_d = params['nn_upsample_d']
+        use_conv_bias_d = params['use_conv_bias_d']
+        use_deconv_bias_d = params['use_deconv_bias_d']
         super().__init__() 
         
         self.pos_fn = pos_fn
 
         # depth modules
-        self.nconv1_d = StructNConv2D_d(1, num_channels, (5,5), pos_fn, 'p', padding=2)
-        self.nconv2_d = StructNConv2D_d(num_channels, num_channels, (5,5), pos_fn, 'p', padding=2)
-        self.nconv3_d = StructNConv2D_d(num_channels, num_channels, (5,5), pos_fn, 'p', padding=2)
-
+        self.nconv1_d = StructNConv2D_d(in_channels=1, out_channels=num_channels, channel_first=False,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=5, stride=1, padding=2, dilation=1)
+        self.nconv2_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=5, stride=1, padding=2, dilation=1)
+        self.nconv3_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=5, stride=1, padding=2, dilation=1)
         if maxpool_d:
             self.npool_d = StructNMaxPool2D_d(kernel_size=2, stride=2, padding=0)
         else:
-            self.npool_d = StructNConv2D_d(num_channels, num_channels,pos_fn=pos_fn, init_method='p',
-                                           kernel_size=2, stride=2, padding=0)
+            self.npool_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
+                                           pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                           kernel_size=2, stride=2, padding=0, dilation=1)
         if nn_upsample_d:
             self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
-            self.nup_d = StructNDeconv2D_d(num_channels, num_channels, pos_fn=pos_fn, init_method='p',
-                                           kernel_size=2, stride=2, padding=0)
+            self.nup_d = StructNDeconv2D_d(in_channels=num_channels, out_channels=num_channels,
+                                           pos_fn=pos_fn, init_method='p', use_bias=use_deconv_bias_d,
+                                           kernel_size=2, stride=2, padding=0, dilation=1)
 
-        self.nconv4_d = StructNConv2D_d(2 * num_channels, num_channels, (3, 3), pos_fn, 'p', padding=1,
-                                        channel_first=True)
-        self.nconv5_d = StructNConv2D_d(2 * num_channels, num_channels, (3, 3), pos_fn, 'p', padding=1,
-                                        channel_first=True)
-        self.nconv6_d = StructNConv2D_d(2 * num_channels, num_channels, (3, 3), pos_fn, 'p', padding=1,
-                                        channel_first=True)
+        self.nconv4_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=3, stride=1, padding=1, dilation=1)
+        self.nconv5_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=3, stride=1, padding=1, dilation=1)
+        self.nconv6_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=3, stride=1, padding=1, dilation=1)
 
-        self.nconv7_d = StructNConv2D_d(num_channels, 1, (1,1), pos_fn, 'k')
+        self.nconv7_d = StructNConv2D_d(in_channels=num_channels, out_channels=1,
+                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        kernel_size=1, stride=1, padding=0, dilation=1)
 
-    def forward(self, d_0_0, cd_0_0):
+    def forward(self, d_0, cd_0):
 
         # Stage 0
-        d_1_0, cd_1_0 = self.nconv1_d(d_0_0, cd_0_0)
-        d_2_0, cd_2_0 = self.nconv2_d(d_1_0, cd_1_0)
-        d_3_0, cd_3_0 = self.nconv3_d(d_2_0, cd_2_0)
+        d_0, cd_0 = self.nconv1_d(d_0, cd_0)
+        d_0, cd_0 = self.nconv2_d(d_0, cd_0)
+        d_0, cd_0 = self.nconv3_d(d_0, cd_0)
 
         # Stage 1
-        d_0_1, cd_0_1 = self.npool_s(d_3_0, cd_3_0)
-        d_1_1, cd_1_1 = self.nconv2_d(d_0_1, cd_0_1)
-        d_2_1, cd_2_1 = self.nconv3_d(d_1_1, cd_1_1)
+        d_1, cd_1 = self.npool_d(d_0, cd_0)
+        d_1, cd_1 = self.nconv2_d(d_1, cd_1)
+        d_1, cd_1 = self.nconv3_d(d_1, cd_1)
 
         # Stage 2
-        d_0_2, cd_0_2 = self.npool_s(d_2_1, cd_2_1)
-        d_1_2, cd_1_2 = self.nconv2_d(d_0_2, cd_0_2)
+        d_2, cd_2 = self.npool_d(d_1, cd_1)
+        d_2, cd_2 = self.nconv2_d(d_2, cd_2)
 
         # Stage 3
-        d_0_3, cd_0_3 = self.npool_s(d_1_2, cd_1_2)
-        d_1_3, cd_1_3 = self.nconv2_d(d_0_3, cd_0_3)
+        d_3, cd_3 = self.npool_d(d_2, cd_2)
+        d_3, cd_3 = self.nconv2_d(d_3, cd_3)
 
         # Stage 2
-        d_0_2_1, cd_0_2_1 = self.nup_d(d_1_3, cd_1_3)
-        d_2_2, cd_2_2 = self.nconv4_d(torch.cat((d_0_2_1, d_1_2), 1),  torch.cat((cd_0_2_1, cd_1_2), 1))
+        d_32, cd_32 = self.nup_d(d_3, cd_3)
+        d_2, cd_2 = self.nconv4_d(torch.cat((d_32, d_2), 1),  torch.cat((cd_32, cd_2), 1))
         
         # Stage 1
-        d_0_1_1, cd_0_1_1 = self.nup_d(d_2_2, cd_2_2)
-        d_3_1, cd_3_1 = self.nconv5_d(torch.cat((d_0_1_1, d_2_1), 1),  torch.cat((cd_0_1_1, cd_2_1), 1))
+        d_21, cd_21 = self.nup_d(d_2, cd_2)
+        d_1, cd_1 = self.nconv5_d(torch.cat((d_21, d_1), 1),  torch.cat((cd_21, cd_1), 1))
 
         # Stage 0
-        d_0_0_1, cd_0_0_1 = self.nup_d(d_3_1, cd_3_1)
-        d_4_0, cd_4_0 = self.nconv_d(torch.cat((d_0_0_1, d_3_0), 1),  torch.cat((cd_0_0_1, cd_3_0), 1))
+        d_10, cd_10 = self.nup_d(d_1, cd_1)
+        d_0, cd_0 = self.nconv6_d(torch.cat((d_10, d_0), 1),  torch.cat((cd_10, cd_0), 1))
         
         # output
-        d, cd = self.nconv7_d(d_4_0, cd_4_0)
+        d, cd = self.nconv7_d(d_0, cd_0)
         return d, cd

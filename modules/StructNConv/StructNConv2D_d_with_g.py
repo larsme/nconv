@@ -40,19 +40,19 @@ class StructNConv2D_d_with_g(torch.nn.Module):
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
         # Define Parameters
-        self.w_grad = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1, 1))
+        self.w_grad = torch.nn.Parameter(data=torch.zeros(1, self.in_channels, 1, 1, 1))
         if self.channel_first:
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels,
+            self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
                                                                        1, 1, 1))
-            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1,
+            self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, 1,
                                                                        self.kernel_size**2, 1, 1))
         else:
-            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1,
+            self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.in_channels, 1,
                                                                        self.kernel_size**2, 1, 1))
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels,
+            self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
                                                                        1, 1))
         if use_bias:
-            self.bias = torch.nn.Parameter(data=torch.Tensor(1, self.out_channels, 1, 1))
+            self.bias = torch.nn.Parameter(data=torch.zeros(1, self.out_channels, 1, 1))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
@@ -76,9 +76,9 @@ class StructNConv2D_d_with_g(torch.nn.Module):
 
 
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, gx, cgx, gy, cgy):
         gx_roll = self.kernel_channels.kernel_channels(gx)
-        cgx_roll = self.kernel_channels.kernel_channel(cgx)
+        cgx_roll = self.kernel_channels.kernel_channels(cgx)
         gy_roll = self.kernel_channels.kernel_channels(gy)
         cgy_roll = self.kernel_channels.kernel_channels(cgy)
 
@@ -112,23 +112,23 @@ class StructNConv2D_d_with_g(torch.nn.Module):
 
         if self.channel_first:
             # Normalized Convolution along channel dimensions
-            nom = F.conv3d(cd_prop * d_prop, self.channel_weight, self.groups)
-            denom = F.conv3d(cd_prop, self.channel_weight, self.groups)
+            nom = F.conv3d(cd_prop * d_prop, self.channel_weight,  groups=self.groups)
+            denom = F.conv3d(cd_prop, self.channel_weight,  groups=self.groups)
             d_channel = (nom / (denom+self.eps))
-            cd_channel = (denom / torch.sum(self.spatial_weight))
+            cd_channel = (denom / torch.sum(self.channel_weight))
 
             # Normalized Convolution along spatial dimensions
-            nom = F.conv3d(cd_channel * d_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv3d(cd_channel * d_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
-            denom = F.conv3d(cd_channel, self.channel_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv3d(cd_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             d = nom / (denom+self.eps)
-            cd = denom / torch.sum(self.channel_weight)
+            cd = denom / torch.sum(self.spatial_weight)
         else:
             # Normalized Convolution along spatial dimensions
-            nom = F.conv3d(cd_prop * d_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            nom = F.conv3d(cd_prop * d_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
-            denom = F.conv3d(cd_prop, self.statial_weight, groups=self.in_channels, stride=self.stride,
+            denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             d_spatial = (nom / (denom+self.eps))
             cd_spatial = (denom / torch.sum(self.spatial_weight))

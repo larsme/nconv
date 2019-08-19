@@ -33,18 +33,18 @@ class StructNDeconv2D_d_with_g(torch.nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.use_bias = self.use_bias
+        self.use_bias = use_bias
 
         self.pos_fn = pos_fn
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
         # Define Parameters
-        self.w_grad = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels,
+        self.w_grad = torch.nn.Parameter(data=torch.zeros(1, self.in_channels,
                                                            1, 1, 1))
-        self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1,
+        self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.in_channels, 1,
                                                                    self.kernel_size**2, 1, 1))
         if use_bias:
-            self.bias = torch.nn.Parameter(data=torch.Tensor(1, self.out_channels, 1, 1))
+            self.bias = torch.nn.Parameter(data=torch.zeros(1, self.out_channels, 1, 1))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier

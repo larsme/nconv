@@ -33,7 +33,7 @@ class StructNDeconv2D_d(torch.nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.use_bias = self.use_bias
+        self.use_bias = use_bias
 
         self.pos_fn = pos_fn
 
@@ -49,7 +49,6 @@ class StructNDeconv2D_d(torch.nn.Module):
             if use_bias:
                 torch.nn.init.xavier_uniform_(self.bias)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             if use_bias:
                 torch.nn.init.kaiming_uniform_(self.bias)

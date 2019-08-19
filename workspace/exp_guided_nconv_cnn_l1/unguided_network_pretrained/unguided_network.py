@@ -11,10 +11,10 @@ from scipy import signal
 
 class CNN(nn.Module):
 
-    def __init__(self, pos_fn=None, num_channels=2):
+    def __init__(self, params, num_channels=2):
         super().__init__() 
         
-        self.pos_fn = pos_fn
+        self.pos_fn = params['enforce_pos_weights']
         
         self.navg1 = self.navg_layer((5,5), 3, 1, num_channels,'p', True)
         self.navg2 = self.navg_layer((5,5), 3, num_channels, num_channels,'p', True)
