@@ -7,20 +7,24 @@ class Trainer(object):
     """Base trainer class. Contains functions for training and saving/loading chackpoints.
     Trainer classes should inherit from this one and overload the train_epoch function."""
 
-    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, workspace_dir=None):
+    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, workspace_dir=None, params_subdir=None):
 
         self.net = net
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.objective = objective
         self.use_gpu = use_gpu
-        self.workspace_dir = None
+        self.experiment_dir = None
         self.use_save_checkpoint = workspace_dir is not None
 
         if workspace_dir is not None:
-            self.workspace_dir = os.path.expanduser(workspace_dir)
-            if not os.path.exists(self.workspace_dir):
-                os.makedirs(self.workspace_dir)
+            workspace_dir = os.path.expanduser(workspace_dir)
+            if not os.path.exists(workspace_dir):
+                os.makedirs(workspace_dir)
+            if params_subdir is not None:
+                self.experiment_dir = os.path.join(workspace_dir, params_subdir)
+                if not os.path.exists(self.experiment_dir):
+                    os.makedirs(self.experiment_dir)
 
         self.epoch = 1
         self.stats = {}
@@ -59,7 +63,7 @@ class Trainer(object):
             'use_gpu' : self.use_gpu,
         }
         
-        chkpt_path = os.path.join(self.workspace_dir, 'checkpoints')
+        chkpt_path = os.path.join(self.experiment_dir, 'checkpoints')
         if not os.path.exists(chkpt_path):
                 os.makedirs(chkpt_path)
                 
@@ -80,7 +84,7 @@ class Trainer(object):
         """
         net_type = type(self.net).__name__
         
-        chkpt_path = os.path.join(self.workspace_dir, 'checkpoints')
+        chkpt_path = os.path.join(self.experiment_dir, 'checkpoints')
         
         if checkpoint is None:
             # Load most recent checkpoint            

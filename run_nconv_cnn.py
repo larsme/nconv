@@ -29,7 +29,7 @@ cudnn.enabled = True
 cudnn.benchmark = True
 
 
-def load_net(exp, params_sub_dir, mode = 'eval', set_ = 'selval', checkpoint_num = -1, training_ws_path ='workspace'):
+def load_net(exp, params_sub_dir, mode='eval', sets=None, checkpoint_num=-1, training_ws_path='workspace'):
     exp_dir = os.path.join(BASE_DIR, training_ws_path)
 
     # Add the experiment's folder to python path
@@ -51,14 +51,13 @@ def load_net(exp, params_sub_dir, mode = 'eval', set_ = 'selval', checkpoint_num
     # Import the trainer
     t = importlib.import_module('trainers.'+params['trainer'])
 
-    if mode == 'train':
-        mode = 'train' # train    eval
-        sets = ['train', 'selval'] #  train  selval
-    elif mode == 'eval':
-        mode = 'eval' # train    eval
-        sets = [set_]
-    else:
-        sets = [set_]
+    if sets is None:
+        if mode == 'train':
+            sets = ['train', 'selval'] #  train  selval
+        elif mode == 'eval':
+            sets = ['val']
+        else:
+            sets = []
 
     with torch.cuda.device(params['gpu_id']):
         # Objective function
@@ -79,7 +78,8 @@ def load_net(exp, params_sub_dir, mode = 'eval', set_ = 'selval', checkpoint_num
 
 
         mytrainer = t.KittiDepthTrainer(model, params, optimizer, objective, lr_decay, dataloaders, dataset_sizes,
-                                        workspace_dir = exp_dir, sets=sets, use_load_checkpoint=checkpoint_num)
+                                        workspace_dir=exp_dir, params_sub_dir=params_sub_dir,
+                                        sets=sets, use_load_checkpoint=checkpoint_num)
 
     return mytrainer
 
@@ -98,18 +98,33 @@ if __name__ == "__main__":
     parser.add_argument('-ws_path', action='store', dest='ws_path', help='Workspace directory')
     parser.add_argument('-checkpoint_num', action='store', dest='checkpoint_num', default=-1, type=int, nargs='?',
                         help='Checkpoint number to load')
-    parser.add_argument('-set', action='store', dest='set_', default='selval', type=str, nargs='?',
+    parser.add_argument('-set', action='store', dest='set_', default=None, type=str, nargs='?',
                         help='Which set to evaluate on "val", "selval" or "test"')
     args = parser.parse_args()
 
     # Path to the workspace directory
 
-    mytrainer = load_net(args.exp, args.params_sub_dir, args.mode, args.set_, args.checkpoint_num, args.ws_path)
-
-    if args.mode == 'train':
-        # train the network
-        net = mytrainer.train()
-    elif args.mode == 'eval':
-        net = mytrainer.evaluate()
-    elif args.mode == 'gen':
-        mytrainer.generate()
+    if args.set_ is None:
+        if args.mode == 'train':
+            # train the network
+            load_net(args.exp, args.params_sub_dir, args.mode, ['train', 'selval'], args.checkpoint_num, args.ws_path)\
+                .train()
+        elif args.mode == 'eval':
+            load_net(args.exp, args.params_sub_dir, args.mode, ['train', 'val'], args.checkpoint_num, args.ws_path)\
+                .evaluate()
+        elif args.mode == 'traineval':
+            load_net(args.exp, args.params_sub_dir, 'train', ['train'], args.checkpoint_num, args.ws_path)\
+                .train()
+            load_net(args.exp, args.params_sub_dir, 'eval', ['val'], args.checkpoint_num, args.ws_path)\
+                .evaluate()
+        elif args.mode == 'gen':
+            load_net(args.exp, args.params_sub_dir, 'eval', ['obj'], args.checkpoint_num, args.ws_path)\
+                .generate()
+    else:
+        my_trainer = load_net(args.exp, args.params_sub_dir, args.mode, [args.set_], args.checkpoint_num, args.ws_path)
+        if args.mode == 'train':
+            my_trainer.train()
+        elif args.mode == 'eval':
+            my_trainer.evaluate()
+        elif args.mode == 'gen':
+            my_trainer.generate()

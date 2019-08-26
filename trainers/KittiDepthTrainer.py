@@ -26,10 +26,11 @@ err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
-             workspace_dir, sets=['train', 'val'], use_load_checkpoint = None):
+             workspace_dir, sets=['train', 'val'], use_load_checkpoint=None, params_sub_dir=None):
 
         # Call the constructor of the parent class (trainer)
-        super().__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'], workspace_dir=workspace_dir)
+        super().__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'],
+                         workspace_dir=workspace_dir, params_subdir=params_sub_dir)
           
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders
@@ -85,7 +86,7 @@ class KittiDepthTrainer(Trainer):
                         
             
         # Save the final model
-        torch.save(self.net, self.workspace_dir + '/final_model.pth')        
+        torch.save(self.net, self.experiment_dir + '/final_model.pth')
         
         print("Training Finished.")
             
@@ -245,6 +246,11 @@ class KittiDepthTrainer(Trainer):
 
         with torch.no_grad():
             for s in self.sets:
+
+                fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
+                if os.path.isfile(os.path.join(self.experiment_dir, fname)):
+                    continue
+
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
                 i = 0
                 # Iterate over data.
@@ -301,10 +307,10 @@ class KittiDepthTrainer(Trainer):
 
                         outputs *= 256
 
-                        saveTensorToImages(outputs, item_idxs, os.path.join(self.workspace_dir,
+                        saveTensorToImages(outputs, item_idxs, os.path.join(self.experiment_dir,
                                                                             s + '_output_' + 'epoch_' + str(
                                                                                 self.epoch - 1)))
-                        saveTensorToImages(cout * 255, item_idxs, os.path.join(self.workspace_dir,
+                        saveTensorToImages(cout * 255, item_idxs, os.path.join(self.experiment_dir,
                                                                                s + '_cert_' + 'epoch_' + str(
                                                                                    self.epoch - 1)))
 
@@ -315,8 +321,7 @@ class KittiDepthTrainer(Trainer):
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
 
                 # Save evaluation metric to text file
-                fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
-                with open(os.path.join(self.workspace_dir, fname), 'w') as text_file:
+                with open(os.path.join(self.experiment_dir, fname), 'w') as text_file:
                     text_file.write(
                         'Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(
                             s, str(self.epoch - 1)))
