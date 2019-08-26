@@ -21,7 +21,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNDeconv2D_d_with_g(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, use_bias=False):
+                 dilation=1, groups=1, use_bias=False, const_bias_init=False):
         super(StructNDeconv2D_d_with_g, self).__init__()
 
         self.eps = 1e-20
@@ -48,11 +48,17 @@ class StructNDeconv2D_d_with_g(torch.nn.Module):
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.kaiming_uniform_(self.spatial_weight)
-            torch.nn.init.kaiming_uniform_(self.w_grad)
+            torch.nn.init.xavier_uniform_(self.spatial_weight)
+            torch.nn.init.xavier_uniform_(self.w_grad)
+            if use_bias and not const_bias_init:
+                torch.nn.init.xavier_uniform_(self.bias)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.kaiming_uniform_(self.w_grad)
+            if use_bias and not const_bias_init:
+                torch.nn.init.kaiming_uniform_(self.bias)
+        if use_bias and const_bias_init:
+            self.bias.data[...] = 0.01
 
         # Enforce positive weights
         if self.pos_fn is not None:
@@ -60,7 +66,7 @@ class StructNDeconv2D_d_with_g(torch.nn.Module):
             EnforcePos.apply(self, 'w_grad', pos_fn)
 
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, gx, cgx, gy, cgy):
         gx_roll = self.kernel_channels.deconv_kernel_channels(gx)
         cgx_roll = self.kernel_channels.deconv_kernel_channels(cgx)
         gy_roll = self.kernel_channels.deconv_kernel_channels(gy)

@@ -26,45 +26,54 @@ class CNN(nn.modules.Module):
         nn_upsample_d = params['nn_upsample_d']
         use_conv_bias_d = params['use_conv_bias_d']
         use_deconv_bias_d = params['use_deconv_bias_d']
+        const_bias_init_d = params['const_bias_init_d']
         super().__init__() 
         
         self.pos_fn = pos_fn
 
         # depth modules
         self.nconv1_d = StructNConv2D_d(in_channels=1, out_channels=num_channels, channel_first=False,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=5, stride=1, padding=2, dilation=1)
         self.nconv2_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=5, stride=1, padding=2, dilation=1)
         self.nconv3_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=5, stride=1, padding=2, dilation=1)
         if maxpool_d:
             self.npool_d = StructNMaxPool2D_d(kernel_size=2, stride=2, padding=0)
         else:
             self.npool_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
-                                           pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                           pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                            kernel_size=2, stride=2, padding=0, dilation=1)
         if nn_upsample_d:
             self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
             self.nup_d = StructNDeconv2D_d(in_channels=num_channels, out_channels=num_channels,
-                                           pos_fn=pos_fn, init_method='p', use_bias=use_deconv_bias_d,
+                                           pos_fn=pos_fn, init_method=params['init_method'], use_bias=use_deconv_bias_d,
                                            kernel_size=2, stride=2, padding=0, dilation=1)
 
         self.nconv4_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=3, stride=1, padding=1, dilation=1)
         self.nconv5_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=3, stride=1, padding=1, dilation=1)
         self.nconv6_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=3, stride=1, padding=1, dilation=1)
 
         self.nconv7_d = StructNConv2D_d(in_channels=num_channels, out_channels=1,
-                                        pos_fn=pos_fn, init_method='p', use_bias=use_conv_bias_d,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=1, stride=1, padding=0, dilation=1)
 
     def forward(self, d_0, cd_0):

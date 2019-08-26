@@ -21,7 +21,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNDeconv2D_gy_with_ds(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, use_bias=False):
+                 dilation=1, groups=1, use_bias=False, const_bias_init=False):
         super(StructNDeconv2D_gy_with_ds, self).__init__()
 
         self.eps = 1e-20
@@ -49,13 +49,15 @@ class StructNDeconv2D_gy_with_ds(torch.nn.Module):
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.w_prop)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
-            if use_bias:
+            if use_bias and not const_bias_init:
                 torch.nn.init.xavier_uniform_(self.bias)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
-            if use_bias:
+            if use_bias and not const_bias_init:
                 torch.nn.init.kaiming_uniform_(self.bias)
+        if use_bias and const_bias_init:
+            self.bias.data[...] = 0.01
 
     def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, s_prod_roll):
 
@@ -71,12 +73,12 @@ class StructNDeconv2D_gy_with_ds(torch.nn.Module):
         cd_down[:, :, -1, :] = 0
 
         cgy_from_ds = s * s_up * s_down * cd_up * cd_up
-        height = (cd_up * d_up + cd_down * d_down) / (cd_up + cd_down)
-        gy_from_ds = (d_down - d_up) / 2 / height
+        height = (cd_up * d_up + cd_down * d_down) / (cd_up + cd_down + self.eps)
+        gy_from_ds = (d_down - d_up) / 2 / (height + self.eps)
 
         # merge calculated gradients with propagated gradients
         gy = (self.w_prop * cgy * gy + 1 * cgy_from_ds * gy_from_ds) / \
-            (self.w_prop * cgy + 1 * cgy_from_ds)
+            (self.w_prop * cgy + 1 * cgy_from_ds + self.eps)
         cgy = (self.w_prop * cgy + 1 * cgy_from_ds) / (self.w_prop + 1)
 
         # prepare convolution
@@ -89,8 +91,8 @@ class StructNDeconv2D_gy_with_ds(torch.nn.Module):
         nom = F.conv3d(cgy_prop * gy_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
         denom = F.conv3d(cgy_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
         cdenom = F.conv3d(deconv_present, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        gy = (nom / (denom+self.eps) + self.bias)
-        cgy = (denom / (cdenom+self.eps))
+        gy = nom / (denom+self.eps)
+        cgy = denom / (cdenom+self.eps)
 
         if self.use_bias:
             gy += self.bias

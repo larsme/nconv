@@ -38,7 +38,7 @@ class StructNMaxPool2D_dg(nn.modules.Module):
             EnforcePos.apply(self, 'wg', pos_fn)
 
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, gx, cgx, gy, cgy):
         _, inds = F.max_pool2d(cd * (cgx + cgy + self.wg), kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
         return retrieve_indices(d, inds), retrieve_indices(cd, inds) / self.stride / self.stride, \

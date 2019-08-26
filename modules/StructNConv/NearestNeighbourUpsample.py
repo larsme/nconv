@@ -28,7 +28,7 @@ class NearestNeighbourUpsample(nn.modules.Module):
         self.stride = stride
         self.padding = padding
 
-    def forward(self, d, cd):
+    def forward(self, d, cd, *args):
         output_size = ((d.size(2)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1,
                        (d.size(3)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1)
         d = F.interpolate(d, output_size, mode='nearest')

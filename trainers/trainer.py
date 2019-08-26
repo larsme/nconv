@@ -7,24 +7,21 @@ class Trainer(object):
     """Base trainer class. Contains functions for training and saving/loading chackpoints.
     Trainer classes should inherit from this one and overload the train_epoch function."""
 
-    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, workspace_dir=None, params_subdir=None):
+    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, experiment_dir=None):
 
         self.net = net
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.objective = objective
         self.use_gpu = use_gpu
-        self.experiment_dir = None
-        self.use_save_checkpoint = workspace_dir is not None
+        self.use_save_checkpoint = experiment_dir is not None
 
-        if workspace_dir is not None:
-            workspace_dir = os.path.expanduser(workspace_dir)
-            if not os.path.exists(workspace_dir):
-                os.makedirs(workspace_dir)
-            if params_subdir is not None:
-                self.experiment_dir = os.path.join(workspace_dir, params_subdir)
-                if not os.path.exists(self.experiment_dir):
-                    os.makedirs(self.experiment_dir)
+        if experiment_dir is None:
+            self.experiment_dir = None
+        else:
+            self.experiment_dir = os.path.expanduser(experiment_dir)
+            if not os.path.exists(self.experiment_dir):
+                os.makedirs(self.experiment_dir)
 
         self.epoch = 1
         self.stats = {}

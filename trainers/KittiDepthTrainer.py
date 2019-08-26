@@ -26,11 +26,11 @@ err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
-             workspace_dir, sets=['train', 'val'], use_load_checkpoint=None, params_sub_dir=None):
+                 experiment_dir=None, sets=['train', 'val'], use_load_checkpoint=None):
 
         # Call the constructor of the parent class (trainer)
         super().__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'],
-                         workspace_dir=workspace_dir, params_subdir=params_sub_dir)
+                         experiment_dir=experiment_dir)
           
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders

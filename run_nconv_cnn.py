@@ -29,13 +29,27 @@ cudnn.enabled = True
 cudnn.benchmark = True
 
 
-def load_net(exp, params_sub_dir, mode='eval', sets=None, checkpoint_num=-1, training_ws_path='workspace'):
-    exp_dir = os.path.join(BASE_DIR, training_ws_path)
+def load_net(mode='eval', sets=None, checkpoint_num=-1,
+             network_file=None, params_sub_dir=None, training_ws_path='workspace'):
+    assert network_file is not None
 
-    # Add the experiment's folder to python path
+    if training_ws_path is None:
+        net_dir = BASE_DIR
+        network_path = network_file
+    else:
+        net_dir = os.path.join(BASE_DIR, training_ws_path)
+        assert os.path.isdir(net_dir)
+        network_path = os.path.join(training_ws_path, network_file)
+    if params_sub_dir is None:
+        experiment_dir = net_dir
+    else:
+        experiment_dir = os.path.join(net_dir, params_sub_dir)
+        assert os.path.isdir(experiment_dir)
+    params_path = os.path.join(experiment_dir, 'params.json')
+    assert os.path.isfile(params_path)
 
     # Read parameters file
-    with open(os.path.join(exp_dir, params_sub_dir, 'params.json'), 'r') as fp:
+    with open(params_path, 'r') as fp:
         params = json.load(fp)
 
     # Use GPU or not
@@ -45,7 +59,7 @@ def load_net(exp, params_sub_dir, mode='eval', sets=None, checkpoint_num=-1, tra
     dataloaders, dataset_sizes = KittiDepthDataloader(params)
 
     # Import the network file
-    f = importlib.import_module((training_ws_path+'.'+exp).replace("/", "."))
+    f = importlib.import_module(network_path.replace('/', '.'))
     model = f.CNN(params).to(device)
 
     # Import the trainer
@@ -78,7 +92,7 @@ def load_net(exp, params_sub_dir, mode='eval', sets=None, checkpoint_num=-1, tra
 
 
         mytrainer = t.KittiDepthTrainer(model, params, optimizer, objective, lr_decay, dataloaders, dataset_sizes,
-                                        workspace_dir=exp_dir, params_sub_dir=params_sub_dir,
+                                        experiment_dir=experiment_dir,
                                         sets=sets, use_load_checkpoint=checkpoint_num)
 
     return mytrainer
@@ -92,10 +106,10 @@ if __name__ == "__main__":
     # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', action='store', dest='mode', help='"eval" or "train" mode')
-    parser.add_argument('-exp', action='store', dest='exp', help='Python file in workspace directory')
+    parser.add_argument('-ws_path', action='store', dest='ws_path', help='Workspace directory')
+    parser.add_argument('-network_file', action='store', dest='network_file', help='Python file in workspace directory')
     parser.add_argument('-params_sub_dir', action='store', dest='params_sub_dir',
                         help='Params file in workspace directory')
-    parser.add_argument('-ws_path', action='store', dest='ws_path', help='Workspace directory')
     parser.add_argument('-checkpoint_num', action='store', dest='checkpoint_num', default=-1, type=int, nargs='?',
                         help='Checkpoint number to load')
     parser.add_argument('-set', action='store', dest='set_', default=None, type=str, nargs='?',
@@ -107,21 +121,28 @@ if __name__ == "__main__":
     if args.set_ is None:
         if args.mode == 'train':
             # train the network
-            load_net(args.exp, args.params_sub_dir, args.mode, ['train', 'selval'], args.checkpoint_num, args.ws_path)\
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     mode=args.mode, sets=['train', 'selval'], checkpoint_num=args.checkpoint_num)\
                 .train()
         elif args.mode == 'eval':
-            load_net(args.exp, args.params_sub_dir, args.mode, ['train', 'val'], args.checkpoint_num, args.ws_path)\
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     mode=args.mode, sets=['train', 'val'], checkpoint_num=args.checkpoint_num)\
                 .evaluate()
         elif args.mode == 'traineval':
-            load_net(args.exp, args.params_sub_dir, 'train', ['train'], args.checkpoint_num, args.ws_path)\
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     mode='train', sets=['train'], checkpoint_num=args.checkpoint_num)\
                 .train()
-            load_net(args.exp, args.params_sub_dir, 'eval', ['val'], args.checkpoint_num, args.ws_path)\
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     mode='eval', sets=['val'], checkpoint_num=args.checkpoint_num)\
                 .evaluate()
         elif args.mode == 'gen':
-            load_net(args.exp, args.params_sub_dir, 'eval', ['obj'], args.checkpoint_num, args.ws_path)\
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     mode='eval', sets=['obj'], checkpoint_num=args.checkpoint_num)\
                 .generate()
     else:
-        my_trainer = load_net(args.exp, args.params_sub_dir, args.mode, [args.set_], args.checkpoint_num, args.ws_path)
+        my_trainer = load_net(training_ws_path=args.ws_path, network_file=args.network_file,
+                              params_sub_dir=args.params_sub_dir,
+                              mode=args.mode, sets=[args.set_], checkpoint_num=args.checkpoint_num)
         if args.mode == 'train':
             my_trainer.train()
         elif args.mode == 'eval':

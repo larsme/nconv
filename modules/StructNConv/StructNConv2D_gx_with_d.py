@@ -21,7 +21,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 
 class StructNConv2D_gx_with_d(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, use_bias=True, channel_first=False):
+                 dilation=1, groups=1, use_bias=True, const_bias_init=False, channel_first=False):
         super(StructNConv2D_gx_with_d, self).__init__()
 
         self.eps = 1e-20
@@ -58,14 +58,16 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
             torch.nn.init.xavier_uniform_(self.channel_weight)
             torch.nn.init.xavier_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_prop)
-            if use_bias:
+            if use_bias and not const_bias_init:
                 torch.nn.init.xavier_uniform_(self.bias)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(self.spatial_weight)
             torch.nn.init.xavier_uniform_(self.w_prop)
-            if use_bias:
+            if use_bias and not const_bias_init:
                 torch.nn.init.kaiming_uniform_(self.bias)
+        if use_bias and const_bias_init:
+            self.bias.data[...] = 0.01
 
         # Enforce positive weights
         if self.pos_fn is not None:
@@ -76,21 +78,19 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
     def forward(self, d, cd, gx, cgx):
 
         # calculate gradients from depths
-        d_left = torch.roll(d, shifts=1, dims=3)
-        cd_left = torch.roll(cd, shifts=1, dims=3)
-        cd_left[:, :, :, 0] = 0
+        d_left = F.pad(d[:, :, :, :-1], (0, 1, 0, 0))
+        cd_left = F.pad(cd[:, :, :, :-1], (0, 1, 0, 0))
 
-        d_right = torch.roll(d, shifts=(-1), dims=3)
-        cd_right = torch.roll(cd, shifts=(-1), dims=3)
-        cd_right[:, :, :, -1] = 0
+        d_right = F.pad(d[:, :, :, 1:], (1, 0, 0, 0))
+        cd_right = F.pad(cd[:, :, :, 1:], (1, 0, 0, 0))
 
         cgx_from_ds = cd_left * cd_right
-        height = (cd_left * d_left + cd_right * d_right) / (cd_left + cd_right)
-        gx_from_ds = (d_right - d_left) / 2 / height
+        height = (cd_left * d_left + cd_right * d_right) / (cd_left + cd_right + self.eps)
+        gx_from_ds = (d_right - d_left) / 2 / (height + self.eps)
 
         # merge calculated gradients with propagated gradients
         gx_prop = (self.w_prop * cgx * gx + 1 * cgx_from_ds * gx_from_ds) / \
-            (self.w_prop * cgx + 1 * cgx_from_ds)
+            (self.w_prop * cgx + 1 * cgx_from_ds + self.eps)
         cgx_prop = (self.w_prop * cgx + 1 * cgx_from_ds) / (self.w_prop + 1)
 
         if self.channel_first:
@@ -125,4 +125,4 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
         if self.use_bias:
             gx += self.bias
 
-        return gx*self.stride, cgx
+        return gx*self.stride, cgx / self.stride / self.stride

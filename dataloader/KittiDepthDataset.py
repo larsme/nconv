@@ -16,16 +16,23 @@ import glob
 
 class KittiDepthDataset(Dataset):
 
-    def __init__(self, kitti_depth_path, setname='train', transform=None, norm_factor=256, invert_depth=False,
-                 load_rgb=False, rgb_dir=None, rgb2gray=False):
+    def __init__(self, kitti_depth_path, setname='train', norm_factor=256, invert_depth=False,
+                 load_rgb=False, rgb_dir=None, rgb2gray=False,
+                 resize=True, center_crop=False, desired_image_width=1216, desired_image_height=352):
         self.kitti_depth_path = kitti_depth_path
         self.setname = setname
-        self.transform = transform
+        if center_crop:
+            self.transform = transforms.Compose([transforms.CenterCrop((desired_image_height, desired_image_width))])
+        else:
+            self.transform = None
         self.norm_factor = norm_factor
         self.invert_depth = invert_depth
         self.load_rgb = load_rgb
         self.rgb_dir = rgb_dir
         self.rgb2gray = rgb2gray
+        self.resize = resize
+        self.desired_image_width = desired_image_width
+        self.desired_image_height = desired_image_height
 
         if setname == 'train' or setname == 'val':
             self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/*/*/velodyne_raw/*/*.png",
@@ -51,9 +58,6 @@ class KittiDepthDataset(Dataset):
         if item < 0 or item >= self.__len__():
             return None
 
-        desired_image_height = 352
-        desired_image_width = 1216
-        resize = True
 
         # Check if Data filename is equal to GT filename
         if self.setname == 'train' or self.setname == 'val':
@@ -78,7 +82,7 @@ class KittiDepthDataset(Dataset):
             img_idx_dir = s[5].split('.png')[0]
             cam = img_source_dir.split('0')[1]
             computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
-                                                desired_image_width, desired_image_height, resize=resize)
+                                                self.desired_image_width, self.desired_image_height, resize=self.resize)
 
         elif self.setname == 'selval':
             sparse_depth_path = self.sparse_depth_paths[item].split('00000')[1]
@@ -119,19 +123,18 @@ class KittiDepthDataset(Dataset):
         gt_depth = Image.open(str(self.gt_depth_paths[item]))
 
         # Apply transformations if given
-        if self.transform is not None:
-            if resize:
-                sparse_depth = sparse_depth.resize((desired_image_width, desired_image_height), Image.NEAREST)
-                gt_depth = gt_depth.resize((desired_image_width, desired_image_height), Image.NEAREST)
-            else:
-                sparse_depth = self.transform(sparse_depth)
-                gt_depth = self.transform(gt_depth)
+        if self.resize:
+            sparse_depth = sparse_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
+            gt_depth = gt_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
+        else:
+            sparse_depth = self.transform(sparse_depth)
+            gt_depth = self.transform(gt_depth)
 
-            if self.load_rgb:
-                if resize:
-                    rgb = self.transform(rgb)
-                else:
-                    rgb = rgb.resize((desired_image_width, desired_image_height), Image.LANCZOS)
+        if self.load_rgb:
+            if self.resize:
+                rgb = self.transform(rgb)
+            else:
+                rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
 
         # Convert to numpy
         sparse_depth = np.array(sparse_depth, dtype=np.float16)
