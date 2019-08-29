@@ -149,6 +149,9 @@ class CNN(nn.modules.Module):
                                                kernel_size=1, stride=1, padding=0, dilation=1)
 
     def forward(self, d_0, cd_0):
+        assert d_0.shape[3] % (self.nup_d.kernel_size**3) == 0
+        assert d_0.shape == cd_0.shape
+
         gx_0 = cgx_0 = gy_0 = cgy_0 = torch.zeros_like(cd_0)
 
         # Stage 0

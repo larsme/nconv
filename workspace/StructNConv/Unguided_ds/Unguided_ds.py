@@ -19,6 +19,7 @@ from modules.StructNConv.StructNMaxPool2D_d_with_s import StructNMaxPool2D_d_wit
 from modules.StructNConv.StructNConv2D_s_with_d import StructNConv2D_s_with_d
 from modules.StructNConv.StructNDeconv2D_s_with_d import StructNDeconv2D_s_with_d
 
+from modules.StructNConv.StructNConv2D_d import StructNConv2D_d
 from modules.StructNConv.StructNConv2D_d_with_s import StructNConv2D_d_with_s
 from modules.StructNConv.StructNDeconv2D_d_with_s import StructNDeconv2D_d_with_s
 
@@ -155,12 +156,15 @@ class CNN(nn.modules.Module):
                                                use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                                kernel_size=3, stride=1, padding=1, dilation=1)
 
-        self.nconv7_d = StructNConv2D_d_with_s(in_channels=num_channels, out_channels=1,
-                                               pos_fn=pos_fn, init_method=params['init_method'],
-                                               use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                               kernel_size=1, stride=1, padding=0, dilation=1)
+        self.nconv7_d = StructNConv2D_d(in_channels=num_channels, out_channels=1,
+                                        pos_fn=pos_fn, init_method=params['init_method'],
+                                        use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
+                                        kernel_size=1, stride=1, padding=0, dilation=1)
 
     def forward(self, d_0, cd_0):
+        assert d_0.shape[3] % (self.nup_d.kernel_size**3) == 0
+        assert d_0.shape == cd_0.shape
+
         s_0 = cs_0 = torch.zeros_like(cd_0)
 
         # Stage 0
@@ -175,8 +179,8 @@ class CNN(nn.modules.Module):
         d_0, cd_0 = self.nconv3_d(d_0, cd_0, s_0, cs_0, s_prod)
 
         # Stage 1
-        d_1, cd_1 = self.npool_d(d_0, cd_0, s_0, cs_0)
         s_1, cs_1 = self.npool_s(d_0, cd_0, s_0, cs_0)
+        d_1, cd_1 = self.npool_d(d_0, cd_0, s_0, cs_0)
         s_1, cs_1 = self.nconv2_s(d_1, cd_1, s_1, cs_1)
         s_prod = self.s_prod_1(s_1, cs_1)
         d_1, cd_1 = self.nconv2_d(d_1, cd_1, s_1, cs_1, s_prod)
@@ -186,7 +190,7 @@ class CNN(nn.modules.Module):
 
         # Stage 2
         s_2, cs_2 = self.npool_s(d_1, cd_1, s_1, cs_1)
-        d_2, cd_2= self.npool_d(d_1, cd_1, s_1, cs_1)
+        d_2, cd_2 = self.npool_d(d_1, cd_1, s_1, cs_1)
         s_2, cs_2 = self.nconv2_s(d_2, cd_2, s_2, cs_2)
         s_prod = self.s_prod_1(s_2, cs_2)
         d_2, cd_2 = self.nconv2_d(d_2, cd_2, s_2, cs_2, s_prod)
@@ -195,7 +199,7 @@ class CNN(nn.modules.Module):
         s_3, cs_3 = self.npool_s(d_2, cd_2, s_2, cs_2)
         d_3, cd_3 = self.npool_d(d_2, cd_2, s_2, cs_2)
         s_3, cs_3 = self.nconv2_s(d_3, cd_3, s_3, cs_3)
-        s_prod = self.s_prod_2(s_3, cs_3)
+        s_prod = self.s_prod_1(s_3, cs_3)
         d_3, cd_3 = self.nconv2_d(d_3, cd_3, s_3, cs_3, s_prod)
 
         # Stage 2
@@ -204,7 +208,7 @@ class CNN(nn.modules.Module):
         s_2, cs_2 = torch.cat((s_32, s_2), 1), torch.cat((cs_32, cs_2), 1)
         d_2, cd_2 = torch.cat((d_32, d_2), 1), torch.cat((cd_32, cd_2), 1)
         s_2, cs_2 = self.nconv4_s(d_2, cd_2, s_2, cs_2)
-        s_prod = self.s_prod_2(s_2, cs_2)
+        s_prod = self.s_prod_2(s_2, cs_2).repeat(1, 2, 1, 1, 1)
         d_2, cd_2 = self.nconv4_d(d_2, cd_2, s_2, cs_2, s_prod)
 
         # Stage 1
@@ -213,7 +217,7 @@ class CNN(nn.modules.Module):
         s_1, cs_1 = torch.cat((s_21, s_1), 1), torch.cat((cs_21, cs_1), 1)
         d_1, cd_1 = torch.cat((d_21, d_1), 1), torch.cat((cd_21, cd_1), 1)
         s_1, cs_1 = self.nconv5_s(d_1, cd_1, s_1, cs_1)
-        s_prod = self.s_prod_2(s_1, cs_1)
+        s_prod = self.s_prod_2(s_1, cs_1).repeat(1, 2, 1, 1, 1)
         d_1, cd_1 = self.nconv5_d(d_1, cd_1, s_1, cs_1, s_prod)
 
         # Stage 0
@@ -222,9 +226,9 @@ class CNN(nn.modules.Module):
         s_0, cs_0 = torch.cat((s_10, s_0), 1), torch.cat((cs_10, cs_0), 1)
         d_0, cd_0 = torch.cat((d_10, d_0), 1), torch.cat((cd_10, cd_0), 1)
         s_0, cs_0 = self.nconv5_s(d_0, cd_0, s_0, cs_0)
-        s_prod = self.s_prod_2(s_0, cs_0, )
+        s_prod = self.s_prod_2(s_0, cs_0).repeat(1, 2, 1, 1, 1)
         d_0, cd_0 = self.nconv5_d(d_0, cd_0, s_0, cs_0, s_prod)
 
         # output
-        d, cd = self.nconv7_d(d_0, cd_0, s_0, cs_0)
+        d, cd = self.nconv7_d(d_0, cd_0)
         return d, cd

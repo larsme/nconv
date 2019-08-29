@@ -18,7 +18,7 @@
     "lr_decay": 0.1,
     "lr_decay_step": 10,
     "enforce_pos_weights": "Softplus",
-    "num_epochs": 3,
+    "num_epochs": 6,
     "save_chkpt_each": 1,
     "save_out_imgs": false,
     "notes_to_self": "Unguided depth completion network trained on Depth"
