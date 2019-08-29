@@ -9,10 +9,11 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
+
 from modules.StructNConv.retrieve_indices import retrieve_indices
 
-class StructNMaxPool2D_s(nn.modules.Module):
+
+class StructNMaxPool2D_s(torch.nn.Module):
     def __init__(self, kernel_size, stride=1, padding=0, dilation=1, channels=5, pos_fn='softplus', init_method='p'):
         super(StructNMaxPool2D_s, self).__init__()
         self.kernel_size = kernel_size
@@ -35,7 +36,7 @@ class StructNMaxPool2D_s(nn.modules.Module):
             torch.nn.init.kaiming_uniform_(self.w_s_pool)
             torch.nn.init.kaiming_uniform_(self.b_s_pool)
 
-    def forward(self, s, cs):
+    def forward(self, d, cd, s, cs, *args):
         _, inds = F.max_pool2d(cs*(self.w_s_pool*s + self.b_s_pool), kernel_size=self.kernel_size, stride=self.stride,
-                              padding=self.padding, dilation=self.dilation, return_indices=True)
+                               padding=self.padding, dilation=self.dilation, return_indices=True)
         return retrieve_indices(s, inds), retrieve_indices(cs, inds) / self.stride / self.stride

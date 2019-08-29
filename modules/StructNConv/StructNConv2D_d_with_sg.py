@@ -9,34 +9,33 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 import torch
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter
-from torch.nn.modules.conv import _ConvNd
-import numpy as np
-from scipy.stats import poisson
-from scipy import signal
 
 from modules.NConv2D import EnforcePos
 from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class StructNConv2D_d_with_sg(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, use_bias=True, const_bias_init=False, channel_first=False):
+    def __init__(self, pos_fn='softplus', init_method='k', use_bias=True, const_bias_init=False,
+                 in_channels=1, out_channels=1, groups=1, channel_first=False,
+                 kernel_size=1, stride=1, padding=0, dilation=1):
         super(StructNConv2D_d_with_sg, self).__init__()
 
         self.eps = 1e-20
+        self.pos_fn = pos_fn
         self.init_method = init_method
-        self.channel_first = channel_first
-        self.groups = groups
+        self.use_bias = use_bias
+
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.dilation = dilation
+        self.groups = groups
+        self.channel_first = channel_first
+
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.use_bias = use_bias
+        self.dilation = dilation
 
-        self.pos_fn = pos_fn
+        self.mid = int((self.kernel_size-1)/2)*self.kernel_size+int((self.kernel_size-1)/2)
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
         # Define Parameters
@@ -85,10 +84,10 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
         gy_roll = self.kernel_channels.kernel_channels(gy)
         cgy_roll = self.kernel_channels.kernel_channels(cgy)
 
-        gx = gx.unsqueeze(2)
-        cgx = cgx.unsqueeze(2)
-        gy = gy.unsqueeze(2)
-        cgy = cgy.unsqueeze(2)
+        gx = gx_roll[:, :, self.mid, :, :].unsqueeze(2)
+        cgx = cgx_roll[:, :, self.mid, :, :].unsqueeze(2)
+        gy = gy_roll[:, :, self.mid, :, :].unsqueeze(2)
+        cgy = cgy_roll[:, :, self.mid, :, :].unsqueeze(2)
 
         gx_prop = (cgx_roll * gx_roll + cgx * gx) / (cgx_roll + cgx + self.eps)
         cgx_prop = (cgx_roll + cgx) / 2
@@ -114,7 +113,7 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
 
         if self.channel_first:
             # Normalized Convolution along channel dimensions
-            nom = F.conv3d(cd_prop * d_prop, self.channel_weight, roups=self.groups)
+            nom = F.conv3d(cd_prop * d_prop, self.channel_weight, groups=self.groups)
             denom = F.conv3d(cd_prop, self.channel_weight, groups=self.groups)
             d_channel = (nom / (denom+self.eps))
             cd_channel = (denom / torch.sum(self.channel_weight))
@@ -126,8 +125,8 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
             cd = denom / torch.sum(self.spatial_weight)
         else:
             # Normalized Convolution along spatial dimensions
-            nom = F.conv3d(cd_prop * d_prop, self.statial_weight, groups=self.in_channels).squeeze(2)
-            denom = F.conv3d(cd_prop, self.statial_weight, groups=self.in_channels).squeeze(2)
+            nom = F.conv3d(cd_prop * d_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
+            denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
             d_spatial = (nom / (denom+self.eps))
             cd_spatial = (denom / torch.sum(self.spatial_weight))
 

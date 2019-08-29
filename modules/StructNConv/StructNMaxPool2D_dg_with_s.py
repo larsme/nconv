@@ -9,11 +9,12 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
+
 from modules.StructNConv.retrieve_indices import retrieve_indices
 from modules.NConv2D import EnforcePos
 
-class StructNMaxPool2D_dg_with_s(nn.modules.Module):
+
+class StructNMaxPool2D_dg_with_s(torch.nn.Module):
     def __init__(self, kernel_size, stride=1, padding=0, dilation=1, channels=5, pos_fn='softplus', init_method='p'):
         super(StructNMaxPool2D_dg_with_s, self).__init__()
         self.kernel_size = kernel_size
@@ -37,7 +38,7 @@ class StructNMaxPool2D_dg_with_s(nn.modules.Module):
         if self.pos_fn is not None:
             EnforcePos.apply(self, 'wg', pos_fn)
 
-    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy):
+    def forward(self, d, cd, s, cs, gx, cgx, gy, cgy, *args):
         _, inds = F.max_pool2d(s * cd * (cgx + cgy + self.wg), kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
         return retrieve_indices(d, inds), retrieve_indices(cd, inds) / self.stride / self.stride, \

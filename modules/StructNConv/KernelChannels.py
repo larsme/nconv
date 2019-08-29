@@ -1,17 +1,9 @@
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter
-from torch.nn.modules.conv import _ConvNd
-import numpy as np
-from scipy.stats import poisson
-from scipy import signal
-
-from modules.NConv2D import EnforcePos
 
 
-class KernelChannels(nn.modules.Module):
+class KernelChannels(torch.nn.Module):
     def __init__(self,  kernel_size, stride=1, padding=0, dilation=1):
         super(KernelChannels, self).__init__()
         self.kernel_size = kernel_size

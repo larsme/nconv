@@ -9,38 +9,33 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 import torch
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter
-from torch.nn.modules.conv import _ConvNd
-import numpy as np
-from scipy.stats import poisson
-from scipy import signal
 
 from modules.NConv2D import EnforcePos
-from modules.StructNConv.KernelChannels import KernelChannels
 
 
-class StructNDeconv2D_d_with_s(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, pos_fn='softplus', init_method='k', stride=1, padding=0,
-                 dilation=1, groups=1, use_bias=False, const_bias_init=False):
-        super(StructNDeconv2D_d_with_s, self).__init__()
+class StructNDeconv2D(torch.nn.Module):
+    def __init__(self, pos_fn='softplus', init_method='k', use_bias=True, const_bias_init=False,
+                 in_channels=1, out_channels=1, groups=1,
+                 kernel_size=1, stride=1, padding=0, dilation=1):
+        super(StructNDeconv2D, self).__init__()
 
         self.eps = 1e-20
+        self.pos_fn = pos_fn
         self.init_method = init_method
-        self.groups = groups
+        self.use_bias = use_bias
+
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.dilation = dilation
+        self.groups = groups
+
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.use_bias = use_bias
-
-        self.pos_fn = pos_fn
-        self.kernel_roll = KernelChannels(kernel_size, stride, padding, dilation)
+        self.dilation = dilation
 
         # Define Parameters
         self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1,
-                                                                   self.kernel_size**2, 1, 1))
+                                                                   self.kernel_size, self.kernel_size))
         if use_bias:
             self.bias = torch.nn.Parameter(data=torch.Tensor(1, self.out_channels, 1, 1))
 
@@ -60,19 +55,16 @@ class StructNDeconv2D_d_with_s(torch.nn.Module):
         if self.pos_fn is not None:
             EnforcePos.apply(self, 'spatial_weight', pos_fn)
 
-    def forward(self, d, cd, s, cs, s_prod_roll):
-
-        d_roll = self.kernel_channels.deconv_kernel_channels(d)
-        cd_roll = self.kernel_channels.deconv_kernel_channels(cd)
-        deconv_present = self.kernel_channels.deconv_kernel_channels(torch.ones_like(d))
-        cd_prop = cd_roll * s_prod_roll
-
+    def forward(self, d, cd):
         # Normalized Deconvolution along spatial dimensions
-        nom = F.conv3d(cd_prop * d_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        cdenom = F.conv3d(deconv_present, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        d = (nom / (denom+self.eps))
-        cd = (denom / (cdenom+self.eps))
+        nom = F.conv_transpose2d(cd * d, self.spatial_weight, groups=self.in_channels,
+                                 stride=self.stride, padding=self.padding, dilation=self.dilation)
+        denom = F.conv_transpose2d(cd, self.spatial_weight, groups=self.in_channels,
+                                   stride=self.stride, padding=self.padding, dilation=self.dilation)
+        cdenom = F.conv_transpose2d(torch.ones_like(cd), self.spatial_weight, groups=self.in_channels,
+                                    stride=self.stride, padding=self.padding, dilation=self.dilation)
+        d = nom / (denom+self.eps)
+        cd = denom / (cdenom+self.eps)
 
         if self.use_bias:
             d += self.bias

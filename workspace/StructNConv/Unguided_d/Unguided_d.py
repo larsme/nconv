@@ -7,17 +7,14 @@ __email__ = "abdo.eldesokey@gmail.com"
 ########################################
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 
 from modules.StructNConv.StructNConv2D_d import StructNConv2D_d
 from modules.StructNConv.StructNMaxPool2D_d import StructNMaxPool2D_d
-from modules.StructNConv.StructNDeconv2D_d import StructNDeconv2D_d
+from modules.StructNConv.StructNDeconv2D import StructNDeconv2D
 from modules.StructNConv.NearestNeighbourUpsample import NearestNeighbourUpsample
 
 
-class CNN(nn.modules.Module):
+class CNN(torch.nn.Module):
 
     def __init__(self, params):
         pos_fn = params['enforce_pos_weights']
@@ -54,9 +51,9 @@ class CNN(nn.modules.Module):
         if nn_upsample_d:
             self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
-            self.nup_d = StructNDeconv2D_d(in_channels=num_channels, out_channels=num_channels,
-                                           pos_fn=pos_fn, init_method=params['init_method'], use_bias=use_deconv_bias_d,
-                                           kernel_size=2, stride=2, padding=0, dilation=1)
+            self.nup_d = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels,
+                                         pos_fn=pos_fn, init_method=params['init_method'], use_bias=use_deconv_bias_d,
+                                         kernel_size=2, stride=2, padding=0, dilation=1)
 
         self.nconv4_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
                                         pos_fn=pos_fn, init_method=params['init_method'],

@@ -7,11 +7,13 @@ __maintainer__ = "Abdelrahman Eldesokey"
 __email__ = "abdo.eldesokey@gmail.com"
 ########################################
 
+import torch
 import torch.nn.functional as F
-import torch.nn as nn
+
 from modules.StructNConv.retrieve_indices import retrieve_indices
 
-class StructNMaxPool2D_d(nn.modules.Module):
+
+class StructNMaxPool2D_d(torch.nn.Module):
     def __init__(self, kernel_size, stride=1, padding=0, dilation=1):
         super(StructNMaxPool2D_d, self).__init__()
         self.kernel_size = kernel_size
