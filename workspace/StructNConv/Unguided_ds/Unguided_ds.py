@@ -39,6 +39,8 @@ class CNN(torch.nn.Module):
         use_conv_bias_d = params['use_conv_bias_d']
         const_bias_init_d = params['const_bias_init_d']
         use_deconv_bias_d = params['use_deconv_bias_d']
+
+        assert params['lidar_padding'] == 0
         super().__init__()
 
         self.pos_fn = pos_fn
@@ -164,6 +166,7 @@ class CNN(torch.nn.Module):
                                         kernel_size=1, stride=1, padding=0, dilation=1)
 
     def forward(self, d_0, cd_0):
+        assert d_0.shape[2] % (self.nup_d.kernel_size**3) == 0
         assert d_0.shape[3] % (self.nup_d.kernel_size**3) == 0
         assert d_0.shape == cd_0.shape
 

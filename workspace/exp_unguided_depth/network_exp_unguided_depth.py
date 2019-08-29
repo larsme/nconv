@@ -19,6 +19,7 @@ class CNN(nn.Module):
     def __init__(self, params, num_channels=2):
         super().__init__()
 
+        assert params['lidar_padding'] == 0
         self.pos_fn = params['enforce_pos_weights']
 
         self.nconv1 = NConv2d(1, num_channels, (5, 5), self.pos_fn, 'p', padding=2)

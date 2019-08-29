@@ -181,14 +181,14 @@ class KittiDepthTrainer(Trainer):
             for data in self.dataloaders[s]:
                 print('train batch %d of %d on %s set' % (i, len(self.dataloaders[s]), s))
                 if self.load_rgb:
-                    sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
+                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
                     sparse_depth = sparse_depth.to(device)
                     gt_depth = gt_depth.to(device)
                     inputs_rgb = inputs_rgb.to(device)
                     predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
                                                                     inputs_rgb)
                 else:
-                    sparse_depth, gt_depth, computed_depth, item_idxs = data
+                    sparse_depth, gt_depth, item_idxs = data
                     sparse_depth = sparse_depth.to(device)
                     gt_depth = gt_depth.to(device)
                     predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
@@ -257,13 +257,13 @@ class KittiDepthTrainer(Trainer):
                 for data in self.dataloaders[s]:
                     print('eval batch %d of %d' % (i, len(self.dataloaders[s])))
                     if self.load_rgb:
-                        sparse_depth, gt_depth, computed_depth, item_idxs, inputs_rgb = data
+                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
                         sparse_depth = sparse_depth.to(device)
                         gt_depth = gt_depth.to(device)
                         inputs_rgb = inputs_rgb.to(device)
                         outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
                     else:
-                        sparse_depth, gt_depth, computed_depth, item_idxs = data
+                        sparse_depth, gt_depth, item_idxs = data
                         sparse_depth = sparse_depth.to(device)
                         gt_depth = gt_depth.to(device)
                         outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
@@ -406,11 +406,13 @@ class KittiDepthTrainer(Trainer):
                     rgb = rgb.resize((desired_image_width, desired_image_height), Image.LANCZOS)
                     rgb = np.array(rgb, dtype=np.float16)
                     computed_sparse_depth = generate_depth_map(days[i], drives[i], frames[i], 2,
-                                                               desired_image_width, desired_image_height)
+                                                               desired_image_width, desired_image_height,
+                                                               lidar_padding=self.params['lidar_padding'])
                     completed_depth, completed_certainty = self.return_one_prediction(computed_sparse_depth, rgb,
                                                                                       img_width, img_height)
                 else:
-                    computed_sparse_depth = generate_depth_map(days[i], drives[i], frames[i], 2)
+                    computed_sparse_depth = generate_depth_map(days[i], drives[i], frames[i], 2,
+                                                               lidar_padding=self.params['lidar_padding'])
                     completed_depth, completed_certainty = self.return_one_prediction(computed_sparse_depth, rgb)
 
                 # import matplotlib.pyplot as plt

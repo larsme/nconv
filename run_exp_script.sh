@@ -51,6 +51,11 @@ python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path worksp
 python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/XavierNoBias2
 python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/XavierNoBias3
 
+python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/LidarPad
+python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/LidarPad2
+python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/LidarPad3
+python run_nconv_cnn.py -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/LidarPad4
+
 
 ## Unguided_dg
 #python run_nconv_cnn.py -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default

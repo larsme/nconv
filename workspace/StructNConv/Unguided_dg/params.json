@@ -29,6 +29,7 @@
     "use_conv_bias_d": true,
     "const_bias_init_d": false,
     "use_deconv_bias_d": false,
+    "lidar_padding": 0,
     "num_epochs": 6,
     "save_chkpt_each": 1,
     "save_out_imgs": false,

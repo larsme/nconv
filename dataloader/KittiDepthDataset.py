@@ -18,7 +18,7 @@ class KittiDepthDataset(Dataset):
 
     def __init__(self, kitti_depth_path, setname='train', norm_factor=256, invert_depth=False,
                  load_rgb=False, rgb_dir=None, rgb2gray=False,
-                 resize=True, center_crop=False, desired_image_width=1216, desired_image_height=352):
+                 resize=True, center_crop=False, desired_image_width=1216, desired_image_height=352, lidar_padding=0):
         self.kitti_depth_path = kitti_depth_path
         self.setname = setname
         if center_crop:
@@ -33,6 +33,7 @@ class KittiDepthDataset(Dataset):
         self.resize = resize
         self.desired_image_width = desired_image_width
         self.desired_image_height = desired_image_height
+        self.lidar_padding = lidar_padding
 
         if setname == 'train' or setname == 'val':
             self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/*/*/velodyne_raw/*/*.png",
@@ -82,7 +83,8 @@ class KittiDepthDataset(Dataset):
             img_idx_dir = s[5].split('.png')[0]
             cam = img_source_dir.split('0')[1]
             computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
-                                                self.desired_image_width, self.desired_image_height, resize=self.resize)
+                                                self.desired_image_width, self.desired_image_height,
+                                                resize=self.resize, lidar_padding=self.lidar_padding)
 
         elif self.setname == 'selval':
             sparse_depth_path = self.sparse_depth_paths[item].split('00000')[1]
@@ -90,6 +92,9 @@ class KittiDepthDataset(Dataset):
             assert (sparse_depth_path == gt_depth_path)
             # Set the certainty path
             sep = str(self.sparse_depth_paths[item]).split('/velodyne_raw/')
+            assert self.lidar_padding == 0
+        else:
+            assert self.lidar_padding == 0
 
         # Read RGB images
         if self.load_rgb:
@@ -171,16 +176,20 @@ class KittiDepthDataset(Dataset):
             gt_depth = 1 / gt_depth
             gt_depth[gt_depth < 0] = 0
 
+        input_depth = sparse_depth if self.lidar_padding == 0 else computed_depth
+
         # Convert RGB image to tensor
         if self.load_rgb:
             rgb = np.array(rgb, dtype=np.float16)
             rgb /= 255
-            if self.rgb2gray: rgb = np.expand_dims(rgb,0)
-            else : rgb = np.transpose(rgb,(2,0,1))
+            if self.rgb2gray:
+                rgb = np.expand_dims(rgb, 0)
+            else:
+                rgb = np.transpose(rgb, (2, 0, 1))
             rgb = torch.tensor(rgb, dtype=torch.float)
-            return sparse_depth, gt_depth, computed_depth, item, rgb
+            return input_depth, gt_depth, item, rgb
         else:
-            return sparse_depth, gt_depth, computed_depth, item
+            return input_depth, gt_depth, item
 
 
 def load_velodyne_points(filename):
@@ -213,8 +222,8 @@ def read_calib_file(filepath):
     return data
 
 
-def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired_image_height=None, resize=True,
-                       vel_depth=False):
+def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0,
+                       resize=True, vel_depth=False):
     """Generate a depth map from velodyne data
     Originally from monodepth2
     """
@@ -265,18 +274,18 @@ def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired
         velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0] + (desired_image_width - im_shape[1]) / 2)
         velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1] + (desired_image_height - im_shape[0]) / 2)
 
-    val_inds = (velo_pts_im[:, 0] >= 0) \
-               & (velo_pts_im[:, 1] >= 0) \
-               & (velo_pts_im[:, 0] < desired_image_width) \
-               & (velo_pts_im[:, 1] < desired_image_height) \
+    val_inds = (velo_pts_im[:, 0] >= -lidar_padding) \
+               & (velo_pts_im[:, 1] >= -lidar_padding) \
+               & (velo_pts_im[:, 0] < desired_image_width+lidar_padding) \
+               & (velo_pts_im[:, 1] < desired_image_height+lidar_padding) \
                & (velo_pts_im[:, 2] > 0)  # positive depth
     velo_pts_im = velo_pts_im[val_inds, :]
 
     # project to image
-    sparse_depth_map = np.zeros((desired_image_height, desired_image_width), np.float)
+    sparse_depth_map = np.zeros((desired_image_height+2*lidar_padding, desired_image_width+2*lidar_padding), np.float)
     for i in range(velo_pts_im.shape[0]):
-        px = int(velo_pts_im[i, 0])
-        py = int(velo_pts_im[i, 1])
+        px = int(velo_pts_im[i, 0]) + lidar_padding
+        py = int(velo_pts_im[i, 1]) + lidar_padding
         depth = velo_pts_im[i, 2]
         if sparse_depth_map[py, px] == 0 or sparse_depth_map[py, px] > depth:
             # for conflicts, use closer point

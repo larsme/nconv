@@ -56,7 +56,7 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
     device = torch.device("cuda:"+str(params['gpu_id']) if torch.cuda.is_available() else "cpu")
 
     # Dataloader for KittiDepth
-    dataloaders, dataset_sizes = KittiDepthDataloader(params)
+    dataloaders, dataset_sizes = KittiDepthDataloader(params, sets)
 
     # Import the network file
     f = importlib.import_module(network_path.replace('/', '.'))
