@@ -7,7 +7,7 @@ class Trainer(object):
     """Base trainer class. Contains functions for training and saving/loading chackpoints.
     Trainer classes should inherit from this one and overload the train_epoch function."""
 
-    def __init__(self, net, optimizer, lr_scheduler, objective, use_gpu=True, experiment_dir=None):
+    def __init__(self, net, optimizer, lr_scheduler, objective, params, use_gpu=True, experiment_dir=None):
 
         self.net = net
         self.optimizer = optimizer
@@ -15,6 +15,7 @@ class Trainer(object):
         self.objective = objective
         self.use_gpu = use_gpu
         self.use_save_checkpoint = experiment_dir is not None
+        self.params=params
 
         if experiment_dir is None:
             self.experiment_dir = None
@@ -87,7 +88,15 @@ class Trainer(object):
             # Load most recent checkpoint            
             checkpoint_list = sorted(glob.glob('{}/{}_ep*.pth.tar'.format(chkpt_path, net_type)))
             if checkpoint_list:
-                checkpoint_path = checkpoint_list[-1]
+                checkpoint = -1
+                for possible_checkpoint_path in checkpoint_list:
+                    epoch = int(possible_checkpoint_path.split('CNN_ep')[1].split('.pth.tar')[0])
+                    if (epoch > checkpoint) and (epoch <= self.params["num_epochs"]):
+                        checkpoint = epoch
+                        checkpoint_path = possible_checkpoint_path
+                if checkpoint == -1:
+                    print('No matching checkpoint file smaller than the maximum epoch number was found!\n')
+                    return False
             else:
                 print('No matching checkpoint file found!\n')
                 return False

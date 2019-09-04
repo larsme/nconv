@@ -19,7 +19,7 @@
     "lr_decay_step": 10,
     "enforce_pos_weights": "Softplus",
     "num_channels": 2,
-    "const_bias_init_d": false,
+    "const_bias_init_d": true,
     "init_method": "x",
     "maxpool_d": true,
     "nn_upsample_d": true,

@@ -20,7 +20,7 @@
     "enforce_pos_weights": "Softplus",
     "num_channels": 2,
     "const_bias_init_d": false,
-    "init_method": "x",
+    "init_method": "k",
     "maxpool_d": true,
     "nn_upsample_d": true,
     "use_conv_bias_d": true,

@@ -29,15 +29,14 @@ class KittiDepthTrainer(Trainer):
                  experiment_dir=None, sets=['train', 'val'], use_load_checkpoint=None):
 
         # Call the constructor of the parent class (trainer)
-        super().__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'],
+        super().__init__(net, optimizer, lr_scheduler, objective, params, use_gpu=params['use_gpu'],
                          experiment_dir=experiment_dir)
           
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders
         self.dataset_sizes = dataset_sizes
         self.use_load_checkpoint = use_load_checkpoint
-        
-        self.params = params
+
         self.save_chkpt_each = params['save_chkpt_each']
         self.sets = sets
         self.save_images = params['save_out_imgs']

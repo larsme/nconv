@@ -23,7 +23,7 @@
     "init_method": "x",
     "maxpool_d": true,
     "nn_upsample_d": true,
-    "use_conv_bias_d": true,
+    "use_conv_bias_d": false,
     "use_deconv_bias_d": false,
     "lidar_padding": 0,
     "num_epochs": 3,
