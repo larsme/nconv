@@ -30,7 +30,7 @@
     "const_bias_init_d": false,
     "use_deconv_bias_d": false,
     "lidar_padding": 0,
-    "num_epochs": 6,
+    "num_epochs": 3,
     "save_chkpt_each": 1,
     "save_out_imgs": false,
     "notes_to_self": "Unguided depth completion network trained on Depth with gradients"

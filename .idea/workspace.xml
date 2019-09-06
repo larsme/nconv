@@ -3,7 +3,13 @@
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/trainers/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/trainer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experiments/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experiments/Default/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/params.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments/Default/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_lidar_pad/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/params.json" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -28,19 +34,19 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Experiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experminents" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experminents" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default" />
       <recent name="$PROJECT_DIR$/modules/StructNConv" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dgs" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Experiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experminents" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experminents" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -55,7 +61,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Unguided_d">
+  <component name="RunManager" selected="Python.Unguided_dg">
     <configuration name="Count Paramerters NConv" type="PythonConfigurationType" factoryName="Python">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -69,7 +75,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
-      <option name="PARAMETERS" value="-mode count_parameters -ws_path workspace/exp_unguided_depth -network_file network_exp_unguided_depth -params_sub_dir Experiments/Default" />
+      <option name="PARAMETERS" value="-mode count_parameters -ws_path workspace/exp_unguided_depth -network_file network_exp_unguided_depth -params_sub_dir Experiments/Default -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -111,7 +117,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
-      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/LidarPad" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_no_bias_lidar_pad -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -153,7 +159,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
-      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -174,7 +180,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
-      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/Default" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/Default -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -195,7 +201,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
-      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_dsg -ws_path workspace/StructNConv/Unguided_dsg -params_sub_dir Experiments/Default" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_dsg -ws_path workspace/StructNConv/Unguided_dsg -params_sub_dir Experiments/Default -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />

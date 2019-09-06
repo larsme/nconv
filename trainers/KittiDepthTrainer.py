@@ -61,7 +61,7 @@ class KittiDepthTrainer(Trainer):
             elif self.use_load_checkpoint == -1:
                 print('=> Loading last checkpoint ...', end=' ')
                 if self.load_checkpoint():
-                    print('Checkpoint was loaded successfully!\n')
+                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
 
         for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
             self.epoch = epoch
@@ -87,7 +87,7 @@ class KittiDepthTrainer(Trainer):
         # Save the final model
         torch.save(self.net, self.experiment_dir + '/final_model.pth')
         
-        print("Training Finished.")
+        print("Training Finished.\n")
             
         return self.net
 
@@ -162,6 +162,8 @@ class KittiDepthTrainer(Trainer):
             if original_width is not None and original_height is not None:
                 outputs_d = torch.nn.functional.interpolate(
                     outputs_d, (original_height, original_width), mode="bilinear", align_corners=False)
+                outputs_c = torch.nn.functional.interpolate(
+                    outputs_c, (original_height, original_width), mode="bilinear", align_corners=False)
             outputs_d[outputs_d < 0] = 0
             outputs_d *= self.params['data_normalize_factor'] / 256
 
@@ -221,13 +223,13 @@ class KittiDepthTrainer(Trainer):
             if self.use_load_checkpoint > 0:
                 print('=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
                 if self.load_checkpoint(self.use_load_checkpoint):
-                    print('Checkpoint was loaded successfully!\n')
+                    print('Checkpoint was loaded successfully!')
                 else:
                     print('Evaluating using initial parameters')
             elif self.use_load_checkpoint == -1:
                 print('=> Loading last checkpoint ...', end=' ')
                 if self.load_checkpoint():
-                    print('Checkpoint was loaded successfully!\n')
+                    print('Checkpoint was loaded successfully!')
                 else:
                     print('Evaluating using initial parameters')
 
@@ -248,6 +250,7 @@ class KittiDepthTrainer(Trainer):
 
                 fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
                 if os.path.isfile(os.path.join(self.experiment_dir, fname)):
+                    print('Evaluation for %s set already done\n' % s)
                     continue
 
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
