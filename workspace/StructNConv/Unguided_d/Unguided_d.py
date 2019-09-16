@@ -24,6 +24,7 @@ class CNN(torch.nn.Module):
         use_conv_bias_d = params['use_conv_bias_d']
         use_deconv_bias_d = params['use_deconv_bias_d']
         const_bias_init_d = params['const_bias_init_d']
+        devalue_pooled_confidence = params['devalue_pooled_confidence']
         super().__init__() 
         
         self.pos_fn = pos_fn
@@ -56,12 +57,14 @@ class CNN(torch.nn.Module):
                                         use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=5, stride=1, padding=0 if self.lidar_padding else 2, dilation=1)
         if maxpool_d:
-            self.npool_d = StructNMaxPool2D_d(kernel_size=2, stride=2, padding=0)
+            self.npool_d = StructNMaxPool2D_d(kernel_size=2, stride=2, padding=0,
+                                              devalue_pooled_confidence=devalue_pooled_confidence)
         else:
             self.npool_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
                                            pos_fn=pos_fn, init_method=params['init_method'],
                                            use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                           kernel_size=2, stride=2, padding=0, dilation=1)
+                                           kernel_size=2, stride=2, padding=0, dilation=1,
+                                           devalue_pooled_confidence=devalue_pooled_confidence)
         if nn_upsample_d:
             self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:

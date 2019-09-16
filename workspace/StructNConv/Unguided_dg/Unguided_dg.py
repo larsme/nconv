@@ -26,6 +26,7 @@ class CNN(torch.nn.Module):
         num_channels = params['num_channels']
 
         maxpool_dg = params['maxpool_dg']
+        devalue_pooled_confidence = params['devalue_pooled_confidence']
 
         nn_upsample_g = params['nn_upsample_g']
         use_conv_bias_g = params['use_conv_bias_g']
@@ -53,7 +54,8 @@ class CNN(torch.nn.Module):
                                              pos_fn=pos_fn, init_method=params['init_method'],
                                              use_bias_d=use_conv_bias_d, const_bias_init_d=const_bias_init_d,
                                              use_bias_g=use_conv_bias_g, const_bias_init_g=const_bias_init_g,
-                                             kernel_size=2, stride=2, padding=0, dilation=1)
+                                             kernel_size=2, stride=2, padding=0, dilation=1,
+                                             devalue_pooled_confidence=devalue_pooled_confidence)
 
         # gradient modules
         self.nconv1_g = StructNConv2D_g_with_d(in_channels=1, out_channels=num_channels,

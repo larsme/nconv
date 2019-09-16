@@ -14,6 +14,7 @@ ROOT_DIR = os.path.dirname(FILE_DIR)
 from trainers.trainer import Trainer # from CVLPyDL repo
 import torch
 import numpy as np
+import time
 
 import matplotlib.pyplot as plt
 import os.path
@@ -22,7 +23,7 @@ from utils.saveTensorToImages import saveTensorToImages
 from utils.error_metrics import MAE, RMSE, MRE, Deltas
 from dataloader.KittiDepthDataset import generate_depth_map
 
-err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3']
+err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3', 'Parameters', 'BatchDuration', 'Duration']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
@@ -235,13 +236,21 @@ class KittiDepthTrainer(Trainer):
 
         self.net.train(False)
 
+
         # AverageMeters for Loss
         loss_meter = {}
         for s in self.sets: loss_meter[s] = AverageMeter()
 
         # AverageMeters for error metrics
         err = {}
-        for m in err_metrics: err[m] = AverageMeter()
+        for m in err_metrics:
+            err[m] = AverageMeter()
+
+        parameter_count = 0
+        for parameter in self.net.parameters():
+            if parameter.requires_grad:
+                parameter_count += parameter.numel()
+        err['Parameters'].update(parameter_count)
 
         device = torch.device('cuda:0' if self.use_gpu else 'cpu')
 
@@ -263,12 +272,16 @@ class KittiDepthTrainer(Trainer):
                         sparse_depth = sparse_depth.to(device)
                         gt_depth = gt_depth.to(device)
                         inputs_rgb = inputs_rgb.to(device)
+                        t = time.time()
                         outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
+                        elapsed = time.time() - t
                     else:
                         sparse_depth, gt_depth, item_idxs = data
                         sparse_depth = sparse_depth.to(device)
                         gt_depth = gt_depth.to(device)
+                        t = time.time()
                         outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
+                        elapsed = time.time() - t
 
                     # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(outputs, gt_depth, cout, self.epoch)
@@ -290,18 +303,28 @@ class KittiDepthTrainer(Trainer):
                     gt_depth *= self.params['data_normalize_factor'] / 256
 
                     # Calculate error metrics
-                    for m in err_metrics:
-                        if m.find('Delta') >= 0:
-                            fn = globals()['Deltas']()
-                            error = fn(outputs, gt_depth)
-                            err['Delta1'].update(error[0], sparse_depth.size(0))
-                            err['Delta2'].update(error[1], sparse_depth.size(0))
-                            err['Delta3'].update(error[2], sparse_depth.size(0))
-                            break
-                        else:
-                            fn = globals()[m]()
-                            error = fn(outputs, gt_depth)
-                            err[m].update(error.item(), sparse_depth.size(0))
+                    if any("Delta" in s for s in err_metrics):
+                        fn = globals()['Deltas']()
+                        error = fn(outputs, gt_depth)
+                        err['Delta1'].update(error[0], sparse_depth.size(0))
+                        err['Delta2'].update(error[1], sparse_depth.size(0))
+                        err['Delta3'].update(error[2], sparse_depth.size(0))
+                    if 'BatchDuration'in err_metrics:
+                        err['BatchDuration'].update(elapsed)
+                    if 'Duration'in err_metrics:
+                        err['Duration'].update(elapsed/sparse_depth.size(0), sparse_depth.size(0))
+                    if 'MAE'in err_metrics:
+                        fn = globals()['MAE']()
+                        error = fn(outputs, gt_depth)
+                        err['MAE'].update(error.item(), sparse_depth.size(0))
+                    if 'RMSE'in err_metrics:
+                        fn = globals()['RMSE']()
+                        error = fn(outputs, gt_depth)
+                        err['RMSE'].update(error.item(), sparse_depth.size(0))
+                    if 'MRE'in err_metrics:
+                        fn = globals()['MRE']()
+                        error = fn(outputs, gt_depth)
+                        err['MRE'].update(error.item(), sparse_depth.size(0))
 
                     # Save output images (optional)
                     if self.save_images and s in ['selval', 'test']:
@@ -344,7 +367,8 @@ class KittiDepthTrainer(Trainer):
             with open(os.path.join(set_dir, 'devkit_object', 'mapping', 'train_rand.txt'), 'r') as f:
                 for line in f.readlines():
                     line = line.rstrip()
-                    if len(line)==0: continue
+                    if len(line) == 0:
+                        continue
                     random_mapping = np.array(line.split(','), np.int_)
 
             drives = np.zeros_like(random_mapping, np.object)
@@ -355,7 +379,8 @@ class KittiDepthTrainer(Trainer):
                 i=0
                 for line in f.readlines():
                     line = line.rstrip()
-                    if len(line) == 0: continue
+                    if len(line) == 0:
+                        continue
                     days[i], drives[i], frames[i] = line.split(' ')
                     i += 1
 
@@ -366,7 +391,7 @@ class KittiDepthTrainer(Trainer):
             resize = False
 
         # Load last save checkpoint
-        if self.use_load_checkpoint != None:
+        if self.use_load_checkpoint is not None:
             if self.use_load_checkpoint > 0:
                 print('=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
                 if self.load_checkpoint(self.use_load_checkpoint):

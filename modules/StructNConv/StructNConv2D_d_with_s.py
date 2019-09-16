@@ -17,7 +17,7 @@ from modules.StructNConv.KernelChannels import KernelChannels
 class StructNConv2D_d_with_s(torch.nn.Module):
     def __init__(self, pos_fn='softplus', init_method='k', use_bias=True, const_bias_init=False,
                  in_channels=1, out_channels=1, groups=1, channel_first=False,
-                 kernel_size=1, stride=1, padding=0, dilation=1):
+                 kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
         super(StructNConv2D_d_with_s, self).__init__()
 
         self.eps = 1e-20
@@ -34,6 +34,8 @@ class StructNConv2D_d_with_s(torch.nn.Module):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
+
+        self.devalue_pooled_confidence = devalue_pooled_confidence
 
         self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
 
@@ -103,4 +105,8 @@ class StructNConv2D_d_with_s(torch.nn.Module):
 
         if self.use_bias:
             d += self.bias
-        return d, cd / self.stride / self.stride
+
+        if self.devalue_pooled_confidence:
+            return d, cd / self.stride / self.stride
+        else:
+            return d, cd

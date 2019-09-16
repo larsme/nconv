@@ -16,7 +16,7 @@ from modules.NConv2D import EnforcePos
 class StructNConv2D_gx_with_d(torch.nn.Module):
     def __init__(self, pos_fn='softplus', init_method='k', use_bias=True, const_bias_init=False,
                  in_channels=1, out_channels=1, groups=1, channel_first=False,
-                 kernel_size=1, stride=1, padding=0, dilation=1):
+                 kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
         super(StructNConv2D_gx_with_d, self).__init__()
 
         self.eps = 1e-20
@@ -33,6 +33,8 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
+
+        self.devalue_pooled_confidence = devalue_pooled_confidence
 
         # Define Parameters
         self.w_prop = torch.nn.Parameter(data=torch.zeros(1, self.in_channels, 1, 1))
@@ -121,4 +123,7 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
         if self.use_bias:
             gx += self.bias
 
-        return gx*self.stride, cgx / self.stride / self.stride
+        if self.devalue_pooled_confidence:
+            return gx*self.stride, cgx / self.stride / self.stride
+        else:
+            return gx*self.stride, cgx

@@ -29,6 +29,7 @@ class CNN(torch.nn.Module):
     def __init__(self, params):
         pos_fn = params['enforce_pos_weights']
         num_channels = params['num_channels']
+        devalue_pooled_confidence = params['devalue_pooled_confidence']
 
         maxpool_s = params['maxpool_s']
         nn_upsample_s = params['nn_upsample_s']
@@ -73,13 +74,15 @@ class CNN(torch.nn.Module):
         if maxpool_s:
             self.npool_s = StructNMaxPool2D_s(channels=num_channels,
                                               kernel_size=2, stride=2, padding=0,
-                                              pos_fn=pos_fn, init_method=params['init_method'])
+                                              pos_fn=pos_fn, init_method=params['init_method'],
+                                              devalue_pooled_confidence=devalue_pooled_confidence)
         else:
             self.npool_s = StructNConv2D_s_with_d(in_channels=num_channels, out_channels=num_channels,
                                                   channel_first=False,
                                                   pos_fn=pos_fn, init_method=params['init_method'],
                                                   use_bias=use_conv_bias_s, const_bias_init=const_bias_init_s,
-                                                  kernel_size=2, stride=2, padding=0, dilation=1)
+                                                  kernel_size=2, stride=2, padding=0, dilation=1,
+                                                  devalue_pooled_confidence=devalue_pooled_confidence)
         if nn_upsample_s:
             self.nup_s = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
@@ -121,14 +124,16 @@ class CNN(torch.nn.Module):
         if maxpool_dg:
             self.npool_dg = StructNMaxPool2D_dg_with_s(channels=num_channels,
                                                        kernel_size=2, stride=2, padding=0,
-                                                       pos_fn=pos_fn, init_method=params['init_method'])
+                                                       pos_fn=pos_fn, init_method=params['init_method'],
+                                                       devalue_pooled_confidence=devalue_pooled_confidence)
         else:
             self.npool_dg = StructNConv2D_dg_with_s(in_channels=num_channels, out_channels=num_channels,
                                                     channel_first=False,
                                                     pos_fn=pos_fn, init_method=params['init_method'],
                                                     use_bias_d=use_conv_bias_d, const_bias_init_d=const_bias_init_d,
                                                     use_bias_g=use_conv_bias_g, const_bias_init_g=const_bias_init_g,
-                                                    kernel_size=2, stride=2, padding=0, dilation=1)
+                                                    kernel_size=2, stride=2, padding=0, dilation=1,
+                                                    devalue_pooled_confidence=devalue_pooled_confidence)
 
         # gradient modules
         # in_channels not 1 because of multiplication with output of nconv1_s

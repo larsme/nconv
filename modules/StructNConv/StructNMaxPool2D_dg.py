@@ -15,12 +15,15 @@ from modules.NConv2D import EnforcePos
 
 
 class StructNMaxPool2D_dg(torch.nn.Module):
-    def __init__(self, kernel_size, stride=1, padding=0, dilation=1, channels=5, pos_fn='softplus', init_method='p'):
+    def __init__(self, kernel_size, stride=1, padding=0, dilation=1, channels=5, pos_fn='softplus', init_method='p',
+                 devalue_pooled_confidence=True):
         super(StructNMaxPool2D_dg, self).__init__()
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
+
+        self.devalue_pooled_confidence = devalue_pooled_confidence
 
         self.pos_fn = pos_fn
         self.init_method = init_method
@@ -41,6 +44,12 @@ class StructNMaxPool2D_dg(torch.nn.Module):
     def forward(self, d, cd, gx, cgx, gy, cgy):
         _, inds = F.max_pool2d(cd * (cgx + cgy + self.wg), kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
-        return retrieve_indices(d, inds), retrieve_indices(cd, inds) / self.stride / self.stride, \
-            retrieve_indices(gx, inds)*self.stride, retrieve_indices(cgx, inds) / self.stride / self.stride, \
-            retrieve_indices(gy, inds)*self.stride, retrieve_indices(cgy, inds) / self.stride / self.stride
+
+        if self.devalue_pooled_confidence:
+            return retrieve_indices(d, inds), retrieve_indices(cd, inds) / self.stride / self.stride, \
+                retrieve_indices(gx, inds)*self.stride, retrieve_indices(cgx, inds) / self.stride / self.stride, \
+                retrieve_indices(gy, inds)*self.stride, retrieve_indices(cgy, inds) / self.stride / self.stride
+        else:
+            return retrieve_indices(d, inds), retrieve_indices(cd, inds), \
+                retrieve_indices(gx, inds)*self.stride, retrieve_indices(cgx, inds), \
+                retrieve_indices(gy, inds)*self.stride, retrieve_indices(cgy, inds)
