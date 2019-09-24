@@ -43,6 +43,13 @@ class CNN(torch.nn.Module):
         if not self.lidar_padding:
             self.l_pad_0 = self.l_pad_1 = self.l_pad_2 = 0
 
+        if maxpool_d and nn_upsample_d:
+            sample_kernel_size = 2
+            sample_padding=0
+        else:
+            sample_kernel_size = 4
+            sample_padding=1
+
         # depth modules
         self.nconv1_d = StructNConv2D_d(in_channels=1, out_channels=num_channels, channel_first=False,
                                         pos_fn=pos_fn, init_method=params['init_method'],
@@ -57,20 +64,20 @@ class CNN(torch.nn.Module):
                                         use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
                                         kernel_size=5, stride=1, padding=0 if self.lidar_padding else 2, dilation=1)
         if maxpool_d:
-            self.npool_d = StructNMaxPool2D_d(kernel_size=2, stride=2, padding=0,
+            self.npool_d = StructNMaxPool2D_d(kernel_size=sample_kernel_size, stride=2, padding=sample_padding,
                                               devalue_pooled_confidence=devalue_pooled_confidence)
         else:
             self.npool_d = StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, channel_first=False,
                                            pos_fn=pos_fn, init_method=params['init_method'],
                                            use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                           kernel_size=2, stride=2, padding=0, dilation=1,
+                                           kernel_size=sample_kernel_size, stride=2, padding=sample_padding, dilation=1,
                                            devalue_pooled_confidence=devalue_pooled_confidence)
         if nn_upsample_d:
-            self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
+            self.nup_d = NearestNeighbourUpsample(kernel_size=sample_kernel_size, stride=2, padding=sample_padding)
         else:
             self.nup_d = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels,
                                          pos_fn=pos_fn, init_method=params['init_method'], use_bias=use_deconv_bias_d,
-                                         kernel_size=2, stride=2, padding=0, dilation=1)
+                                         kernel_size=sample_kernel_size, stride=2, padding=sample_padding, dilation=1)
 
         self.nconv4_d = StructNConv2D_d(in_channels=2 * num_channels, out_channels=num_channels, channel_first=True,
                                         pos_fn=pos_fn, init_method=params['init_method'],

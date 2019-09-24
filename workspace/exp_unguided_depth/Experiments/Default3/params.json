@@ -19,7 +19,7 @@
     "lr_decay_step": 10,
     "enforce_pos_weights": "Softplus",
     "lidar_padding": 0,
-    "num_epochs": 6,
+    "num_epochs": 3,
     "save_chkpt_each": 1,
     "save_out_imgs": false,
     "notes_to_self": "Unguided depth completion network trained on Depth"

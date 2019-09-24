@@ -259,8 +259,19 @@ class KittiDepthTrainer(Trainer):
 
                 fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
                 if os.path.isfile(os.path.join(self.experiment_dir, fname)):
-                    print('Evaluation for %s set already done\n' % s)
-                    continue
+                    with open(os.path.join(self.experiment_dir, fname), 'r') as text_file:
+                        text_lines = text_file.read()
+                        text_lines = text_lines.splitlines()[2:]
+                        skip = True
+                        if len(text_lines)-1 != len(err_metrics):
+                            skip = False
+                        else:
+                            for i in range(len(err_metrics)):
+                                if text_lines[i+1].split('[')[1].split(']')[0] != err_metrics[i]:
+                                    skip = False
+                        if skip:
+                            print('Evaluation for %s set already done\n' % s)
+                            continue
 
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
                 i = 0

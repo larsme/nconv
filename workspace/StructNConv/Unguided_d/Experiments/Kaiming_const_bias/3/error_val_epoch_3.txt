@@ -7,3 +7,6 @@ Evaluation results on [val], Epoch [3]:
 [Delta1]: 0.57952964
 [Delta2]: 0.78716916
 [Delta3]: 0.87671942
+[Parameters]: 230.00000000
+[BatchDuration]: 0.20336806
+[Duration]: 0.00816203
