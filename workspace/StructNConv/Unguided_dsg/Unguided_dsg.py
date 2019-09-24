@@ -29,7 +29,7 @@ class CNN(torch.nn.Module):
 
     def __init__(self, params):
         pos_fn = params['enforce_pos_weights']
-        num_channels = params['num_channels']
+        self.num_channels = num_channels = params['num_channels']
         devalue_pooled_confidence = params['devalue_pooled_confidence']
 
         maxpool_s = params['maxpool_s']
@@ -352,14 +352,17 @@ class CNN(torch.nn.Module):
         gx_0, cgx_0 = self.nup_gx(gx_1, cgx_1)
         gy_0, cgy_0 = self.nup_gy(gy_1, cgy_1)
         d_10, cd_10 = self.nup_d(d_1, cd_1)
-        d_0, cd_0 = torch.cat((d_10, d_0), 1), torch.cat((cd_10, cd_0), 1)
-        s_0, cs_0 = self.nconv6_s(d_0, cd_0, s_0, cs_0)
+        d_0, cd_0 = torch.cat((d_10, d_0.repeat(1, self.num_channels, 1, 1)), 1), \
+                    torch.cat((cd_10, cd_0.repeat(1, self.num_channels, 1, 1)), 1)
+        s_0, cs_0 = self.nconv6_s(d_0, cd_0, s_0.repeat(1, 2, 1, 1), cs_0.repeat(1, 2, 1, 1))
         s_prod = self.s_prod_2(s_0, cs_0).repeat(1, 2, 1, 1, 1)
-        s_repeat = s_0.repeat(1, 2, 1, 1)
-        gx_0, cgx_0, gy_0, cgy_0 = self.nconv6_g(d_0, cd_0, s_repeat, cs_0, gx_0, cgx_0, gy_0, cgy_0, s_prod)
-        gx_repeat, cgx_repeat = gx_0.repeat(1, 2, 1, 1), cgx_0.repeat(1, 2, 1, 1)
-        gy_repeat, cgy_repeat = gy_0.repeat(1, 2, 1, 1), cgy_0.repeat(1, 2, 1, 1)
-        d_0, cd_0 = self.nconv6_d(d_0, cd_0, s_repeat, cs_0, gx_repeat, cgx_repeat, gy_repeat, cgy_repeat, s_prod)
+        gx_0, cgx_0, gy_0, cgy_0 = self.nconv6_g(d_0, cd_0, s_0.repeat(1, 2, 1, 1), cs_0.repeat(1, 2, 1, 1),
+                                                 gx_0.repeat(1, 2, 1, 1), cgx_0.repeat(1, 2, 1, 1),
+                                                 gy_0.repeat(1, 2, 1, 1), cgy_0.repeat(1, 2, 1, 1), s_prod)
+        d_0, cd_0 = self.nconv6_d(d_0, cd_0, s_0.repeat(1, 2, 1, 1), cs_0.repeat(1, 2, 1, 1),
+                                  gx_0.repeat(1, 2, 1, 1), cgx_0.repeat(1, 2, 1, 1),
+                                  gy_0.repeat(1, 2, 1, 1), cgy_0.repeat(1, 2, 1, 1),
+                                  s_prod)
 
         # output
         d, cd = self.nconv7_d(d_0, cd_0)

@@ -2,21 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_4_channels/params.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg_4_stage/Experiments/Default/params.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg_4_stage/Unguided_dg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataloader/KittiDepthDataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/KittiDepthDataloader.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Kaiming/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Kaiming/params.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/2/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/2/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/3/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/3/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/4/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_deconv/4/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/1/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/1/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/2/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/2/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/3/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/3/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/4/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments/Xavier_no_bias_stride/4/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experiments/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experiments/Default/params.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments/Default/params.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Unguided_dsg.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Unguided_dsg.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -37,23 +28,23 @@
   <component name="ProjectId" id="1Oggb7r8ZdjQ5Mc6M0vf98E3yDU" />
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace/StructNConv" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Experiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Experiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dg/Experminents" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experminents" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments/StrideAndDeconvWithKernelSize2Stride2" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace/StructNConv" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments/StrideAndDeconvWithKernelSize2Stride2" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/Experiments" />
       <recent name="$PROJECT_DIR$/workspace/exp_unguided_depth/Experiments/Xavier" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default" />
-      <recent name="$PROJECT_DIR$/modules/StructNConv" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -68,7 +59,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Unguided_d _no_bias_4_channel">
+  <component name="RunManager" selected="Python.Unguided_dg">
     <configuration name="Count Paramerters NConv" type="PythonConfigurationType" factoryName="Python">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -125,6 +116,27 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
       <option name="PARAMETERS" value="-mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_no_bias_4_channels -exp_subdir 1" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unguided_d _stride_deconv" type="PythonConfigurationType" factoryName="Python">
+      <module name="nconv" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_no_bias_stride_deconv -exp_subdir 1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -216,6 +228,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Unguided_dg_4_stage" type="PythonConfigurationType" factoryName="Python">
+      <module name="nconv" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_nconv_cnn.py" />
+      <option name="PARAMETERS" value="-mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 1" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Unguided_ds" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -268,11 +301,13 @@
     <list>
       <item itemvalue="Python.NConv" />
       <item itemvalue="Python.Unguided_d" />
+      <item itemvalue="Python.Unguided_d _stride_deconv" />
       <item itemvalue="Python.Unguided_d _no_bias_4_channel" />
       <item itemvalue="Python.Unguided_d_eval" />
       <item itemvalue="Python.Unguided_d lidar_pad" />
       <item itemvalue="Python.Count Paramerters NConv" />
       <item itemvalue="Python.Unguided_dg" />
+      <item itemvalue="Python.Unguided_dg_4_stage" />
       <item itemvalue="Python.Unguided_dsg" />
       <item itemvalue="Python.Unguided_ds" />
       <item itemvalue="Shell Script.shell" />
@@ -318,9 +353,9 @@
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/trainers/KittiDepthTrainer.py</url>
-          <line>314</line>
-          <option name="timeStamp" value="9" />
+          <url>file://$PROJECT_DIR$/workspace/StructNConv/Unguided_ds/Unguided_ds.py</url>
+          <line>178</line>
+          <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
