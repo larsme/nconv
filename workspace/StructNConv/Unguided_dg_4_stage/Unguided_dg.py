@@ -24,7 +24,7 @@ class CNN(torch.nn.Module):
 
     def __init__(self, params):
         pos_fn = params['enforce_pos_weights']
-        num_channels = params['num_channels']
+        self.num_channels = num_channels = params['num_channels']
 
         maxpool_dg = params['maxpool_dg']
         devalue_pooled_confidence = params['devalue_pooled_confidence']

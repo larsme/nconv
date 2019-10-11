@@ -75,8 +75,8 @@ class StructNConv2D_d(torch.nn.Module):
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cd * d, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cd, self.channel_weight, groups=self.groups)
-            d_channel = (nom / (denom+self.eps))
-            cd_channel = (denom / torch.sum(self.channel_weight))
+            d_channel = nom / (denom+self.eps)
+            cd_channel = denom / (torch.sum(self.channel_weight)+self.eps)
 
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cd_channel * d_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
@@ -84,21 +84,21 @@ class StructNConv2D_d(torch.nn.Module):
             denom = F.conv2d(cd_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation)
             d = nom / (denom+self.eps)
-            cd = denom / torch.sum(self.spatial_weight)
+            cd = denom / (torch.sum(self.spatial_weight)+self.eps)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cd * d, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation)
             denom = F.conv2d(cd, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation)
-            d_spatial = (nom / (denom+self.eps))
-            cd_spatial = (denom / torch.sum(self.spatial_weight))
+            d_spatial = nom / (denom+self.eps)
+            cd_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
 
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cd_spatial * d_spatial, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cd_spatial, self.channel_weight, groups=self.groups)
             d = nom / (denom+self.eps)
-            cd = denom / torch.sum(self.channel_weight)
+            cd = denom / (torch.sum(self.channel_weight)+self.eps)
         if self.use_bias:
             d += self.bias
 

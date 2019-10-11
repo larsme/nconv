@@ -105,26 +105,26 @@ class StructNConv2D_gy_with_ds(torch.nn.Module):
             # Normalized Convolution along channel dimensions
             nom = F.conv3d(cgy_prop * gy_roll, self.channel_weight, groups=self.groups)
             denom = F.conv3d(cgy_prop, self.channel_weight, groups=self.groups)
-            gy_channel = (nom / (denom+self.eps))
-            cgy_channel = (denom / torch.sum(self.channel_weight))
+            gy_channel = nom / (denom+self.eps)
+            cgy_channel = denom / (torch.sum(self.channel_weight)+self.eps)
 
             # Normalized Convolution along spatial dimensions
             nom = F.conv3d(cgy_channel * gy_channel, self.spatial_weight, groups=self.out_channels).squeeze(2)
             denom = F.conv3d(cgy_channel, self.spatial_weight, groups=self.out_channels).squeeze(2)
             gy = nom / (denom+self.eps)
-            cgy = denom / torch.sum(self.spatial_weight)
+            cgy = denom / (torch.sum(self.spatial_weight)+self.eps)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv3d(cgy_prop * gy_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
             denom = F.conv3d(cgy_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
-            gy_spatial = (nom / (denom+self.eps))
-            cgy_spatial = (denom / torch.sum(self.spatial_weight))
+            gy_spatial = nom / (denom+self.eps)
+            cgy_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
 
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cgy_spatial * gy_spatial, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cgy_spatial, self.channel_weight, groups=self.groups)
             gy = nom / (denom+self.eps)
-            cgy = denom / torch.sum(self.channel_weight)
+            cgy = denom / (torch.sum(self.channel_weight)+self.eps)
 
         if self.use_bias:
             gy += self.bias

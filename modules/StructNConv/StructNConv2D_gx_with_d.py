@@ -40,14 +40,14 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
         self.w_prop = torch.nn.Parameter(data=torch.zeros(1, self.in_channels, 1, 1))
         if self.channel_first:
             self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
-                                                                       1, 1))
+                                                                      1, 1))
             self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, 1,
-                                                                       self.kernel_size, self.kernel_size))
+                                                                      self.kernel_size, self.kernel_size))
         else:
             self.spatial_weight = torch.nn.Parameter(data=torch.zeros(self.in_channels, 1,
-                                                                       self.kernel_size, self.kernel_size))
+                                                                      self.kernel_size, self.kernel_size))
             self.channel_weight = torch.nn.Parameter(data=torch.zeros(self.out_channels, self.in_channels,
-                                                                       1, 1))
+                                                                      1, 1))
         if use_bias:
             self.bias = torch.nn.Parameter(data=torch.zeros(1, self.out_channels, 1, 1))
 
@@ -95,8 +95,8 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cgx_prop * gx_prop, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cgx_prop, self.channel_weight, groups=self.groups)
-            gx_channel = (nom / (denom+self.eps))
-            cgx_channel = (denom / torch.sum(self.channel_weight))
+            gx_channel = nom / (denom+self.eps)
+            cgx_channel = denom / (torch.sum(self.channel_weight)+self.eps)
 
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cgx_channel * gx_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
@@ -104,21 +104,21 @@ class StructNConv2D_gx_with_d(torch.nn.Module):
             denom = F.conv2d(cgx_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             gx = nom / (denom+self.eps)
-            cgx = denom / torch.sum(self.spatial_weight)
+            cgx = denom / (torch.sum(self.spatial_weight)+self.eps)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cgx_prop * gx_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
             denom = F.conv2d(cgx_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
-            gx_spatial = (nom / (denom+self.eps))
-            cgx_spatial = (denom / torch.sum(self.spatial_weight))
+            gx_spatial = nom / (denom+self.eps)
+            cgx_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
 
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cgx_spatial * gx_spatial, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cgx_spatial, self.channel_weight, groups=self.groups)
             gx = nom / (denom+self.eps)
-            cgx = denom / torch.sum(self.channel_weight)
+            cgx = denom / (torch.sum(self.channel_weight)+self.eps)
 
         if self.use_bias:
             gx += self.bias

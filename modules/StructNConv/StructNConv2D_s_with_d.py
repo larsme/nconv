@@ -105,8 +105,8 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cs_prop * s_prop, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cs_prop, self.channel_weight, groups=self.groups)
-            s_channel = (nom / (denom+self.eps))
-            cs_channel = (denom / torch.sum(self.channel_weight))
+            s_channel = nom / (denom+self.eps)
+            cs_channel = denom / (torch.sum(self.channel_weight)+self.eps)
 
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cs_channel * s_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
@@ -114,21 +114,21 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             denom = F.conv2d(cs_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
             s = nom / (denom+self.eps)
-            cs = denom / torch.sum(self.spatial_weight)
+            cs = denom / (torch.sum(self.spatial_weight)+self.eps)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cs_prop * s_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
             denom = F.conv2d(cs_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
-            s_spatial = (nom / (denom+self.eps))
-            cs_spatial = (denom / torch.sum(self.spatial_weight))
+            s_spatial = nom / (denom+self.eps)
+            cs_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
 
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cs_spatial * s_spatial, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cs_spatial, self.channel_weight, groups=self.groups)
             s = nom / (denom+self.eps)
-            cs = denom / torch.sum(self.channel_weight)
+            cs = denom / (torch.sum(self.channel_weight)+self.eps)
 
         if self.stride > 1:
             s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)

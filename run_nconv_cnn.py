@@ -87,7 +87,7 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
     # Read parameters file
     with open(params_path, 'r') as fp:
         params = json.load(fp)
-    params['parameter file:'] = params_sub_dir
+    params['experiment path:'] = params_path
 
     # Use GPU or not
     device = torch.device("cuda:"+str(params['gpu_id']) if torch.cuda.is_available() else "cpu")

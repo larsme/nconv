@@ -23,7 +23,7 @@ from utils.saveTensorToImages import saveTensorToImages
 from utils.error_metrics import MAE, RMSE, MRE, Deltas
 from dataloader.KittiDepthDataset import generate_depth_map
 
-err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3', 'Parameters', 'BatchDuration', 'Duration']
+err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3', 'Parameters', 'BatchDuration', 'Duration', 'Skipped']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
@@ -173,7 +173,8 @@ class KittiDepthTrainer(Trainer):
 
     def train_epoch(self):
         device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
-        
+
+        skipped=0
         loss_meter = {}
         for s in self.sets: loss_meter[s] = AverageMeter()
           
@@ -182,34 +183,66 @@ class KittiDepthTrainer(Trainer):
             i = 0
             for data in self.dataloaders[s]:
                 print('train batch %d of %d on %s set' % (i, len(self.dataloaders[s]), s))
-                if self.load_rgb:
-                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                    sparse_depth = sparse_depth.to(device)
-                    gt_depth = gt_depth.to(device)
-                    inputs_rgb = inputs_rgb.to(device)
-                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
-                                                                    inputs_rgb)
-                else:
-                    sparse_depth, gt_depth, item_idxs = data
-                    sparse_depth = sparse_depth.to(device)
-                    gt_depth = gt_depth.to(device)
-                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
+                try:
+                    if self.load_rgb:
+                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                        sparse_depth = sparse_depth.to(device)
+                        gt_depth = gt_depth.to(device)
+                        inputs_rgb = inputs_rgb.to(device)
+                        predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
+                                                                        inputs_rgb)
+                    else:
+                        sparse_depth, gt_depth, item_idxs = data
+                        sparse_depth = sparse_depth.to(device)
+                        gt_depth = gt_depth.to(device)
+                        predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
 
-                # Calculate loss for valid pixel in the ground truth
-                loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
+                    # Calculate loss for valid pixel in the ground truth
+                    loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
 
-                # backward + optimize only if in training phase
-                if s == 'train':
-                    loss.backward()
-                    self.optimizer.step()
+                    # backward + optimize only if in training phase
+                    if s == 'train':
+                        loss.backward()
+                        self.optimizer.step()
 
-                self.optimizer.zero_grad()
+                    self.optimizer.zero_grad()
 
-                # statistics
-                loss_meter[s].update(loss.item(), sparse_depth.size(0))
-                i += 1
+                    # statistics
+                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                    i += 1
+                except:
+                    #try once more
+                    try:
+                        if self.load_rgb:
+                            sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                            sparse_depth = sparse_depth.to(device)
+                            gt_depth = gt_depth.to(device)
+                            inputs_rgb = inputs_rgb.to(device)
+                            predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
+                                                                            inputs_rgb)
+                        else:
+                            sparse_depth, gt_depth, item_idxs = data
+                            sparse_depth = sparse_depth.to(device)
+                            gt_depth = gt_depth.to(device)
+                            predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
 
-            print('[{}] Loss: {:.8f}'.format(s,  loss_meter[s].avg), end=' ')
+                        # Calculate loss for valid pixel in the ground truth
+                        loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
+
+                        # backward + optimize only if in training phase
+                        if s == 'train':
+                            loss.backward()
+                            self.optimizer.step()
+
+                        self.optimizer.zero_grad()
+
+                        # statistics
+                        loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                        i += 1
+                    except:
+                        skipped += 1
+
+            print('[{}] Loss: {:.8f} Skipped{:.0f}'.format(s,  loss_meter[s].avg, skipped), end=' ')
 
         return loss_meter
 
@@ -278,79 +311,83 @@ class KittiDepthTrainer(Trainer):
                 # Iterate over data.
                 for data in self.dataloaders[s]:
                     print('eval batch %d of %d' % (i, len(self.dataloaders[s])))
-                    if self.load_rgb:
-                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        inputs_rgb = inputs_rgb.to(device)
-                        t = time.time()
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
-                        elapsed = time.time() - t
-                    else:
-                        sparse_depth, gt_depth, item_idxs = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        t = time.time()
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
-                        elapsed = time.time() - t
+                    try:
+                        if self.load_rgb:
+                            sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                            sparse_depth = sparse_depth.to(device)
+                            gt_depth = gt_depth.to(device)
+                            inputs_rgb = inputs_rgb.to(device)
+                            t = time.time()
+                            outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
+                            elapsed = time.time() - t
+                        else:
+                            sparse_depth, gt_depth, item_idxs = data
+                            sparse_depth = sparse_depth.to(device)
+                            gt_depth = gt_depth.to(device)
+                            t = time.time()
+                            outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
+                            elapsed = time.time() - t
 
-                    # Calculate loss for valid pixel in the ground truth
-                    loss = self.objective(outputs, gt_depth, cout, self.epoch)
+                        # Calculate loss for valid pixel in the ground truth
+                        loss = self.objective(outputs, gt_depth, cout, self.epoch)
 
-                    # statistics
-                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                        # statistics
+                        loss_meter[s].update(loss.item(), sparse_depth.size(0))
 
-                    # Convert to depth in meters before error metrics
-                    outputs[outputs == 0] = -1
-                    # if not self.load_rgb:
-                    #     outputs[outputs==outputs[0,0,0,0]] = -1
-                    gt_depth[gt_depth == 0] = -1
-                    if self.params['invert_depth']:
-                        outputs = 1 / outputs
-                        gt_depth = 1 / gt_depth
-                    outputs[outputs < 0] = 0
-                    gt_depth[gt_depth < 0] = 0
-                    outputs *= self.params['data_normalize_factor'] / 256
-                    gt_depth *= self.params['data_normalize_factor'] / 256
+                        # Convert to depth in meters before error metrics
+                        outputs[outputs == 0] = -1
+                        # if not self.load_rgb:
+                        #     outputs[outputs==outputs[0,0,0,0]] = -1
+                        gt_depth[gt_depth == 0] = -1
+                        if self.params['invert_depth']:
+                            outputs = 1 / outputs
+                            gt_depth = 1 / gt_depth
+                        outputs[outputs < 0] = 0
+                        gt_depth[gt_depth < 0] = 0
+                        outputs *= self.params['data_normalize_factor'] / 256
+                        gt_depth *= self.params['data_normalize_factor'] / 256
 
-                    # Calculate error metrics
-                    if any("Delta" in s for s in err_metrics):
-                        fn = globals()['Deltas']()
-                        error = fn(outputs, gt_depth)
-                        err['Delta1'].update(error[0], sparse_depth.size(0))
-                        err['Delta2'].update(error[1], sparse_depth.size(0))
-                        err['Delta3'].update(error[2], sparse_depth.size(0))
-                    if 'BatchDuration'in err_metrics:
-                        err['BatchDuration'].update(elapsed)
-                    if 'Duration'in err_metrics:
-                        err['Duration'].update(elapsed/sparse_depth.size(0), sparse_depth.size(0))
-                    if 'MAE'in err_metrics:
-                        fn = globals()['MAE']()
-                        error = fn(outputs, gt_depth)
-                        err['MAE'].update(error.item(), sparse_depth.size(0))
-                    if 'RMSE'in err_metrics:
-                        fn = globals()['RMSE']()
-                        error = fn(outputs, gt_depth)
-                        err['RMSE'].update(error.item(), sparse_depth.size(0))
-                    if 'MRE'in err_metrics:
-                        fn = globals()['MRE']()
-                        error = fn(outputs, gt_depth)
-                        err['MRE'].update(error.item(), sparse_depth.size(0))
+                        # Calculate error metrics
+                        if any("Delta" in s for s in err_metrics):
+                            fn = globals()['Deltas']()
+                            error = fn(outputs, gt_depth)
+                            err['Delta1'].update(error[0], sparse_depth.size(0))
+                            err['Delta2'].update(error[1], sparse_depth.size(0))
+                            err['Delta3'].update(error[2], sparse_depth.size(0))
+                        if 'BatchDuration'in err_metrics:
+                            err['BatchDuration'].update(elapsed)
+                        if 'Duration'in err_metrics:
+                            err['Duration'].update(elapsed/sparse_depth.size(0), sparse_depth.size(0))
+                        if 'MAE'in err_metrics:
+                            fn = globals()['MAE']()
+                            error = fn(outputs, gt_depth)
+                            err['MAE'].update(error.item(), sparse_depth.size(0))
+                        if 'RMSE'in err_metrics:
+                            fn = globals()['RMSE']()
+                            error = fn(outputs, gt_depth)
+                            err['RMSE'].update(error.item(), sparse_depth.size(0))
+                        if 'MRE'in err_metrics:
+                            fn = globals()['MRE']()
+                            error = fn(outputs, gt_depth)
+                            err['MRE'].update(error.item(), sparse_depth.size(0))
 
-                    # Save output images (optional)
-                    if self.save_images and s in ['selval', 'test']:
-                        outputs = outputs.data
+                        # Save output images (optional)
+                        if self.save_images and s in ['selval', 'test']:
+                            outputs = outputs.data
 
-                        outputs *= 256
+                            outputs *= 256
 
-                        saveTensorToImages(outputs, item_idxs, os.path.join(self.experiment_dir,
-                                                                            s + '_output_' + 'epoch_' + str(
-                                                                                self.epoch - 1)))
-                        saveTensorToImages(cout * 255, item_idxs, os.path.join(self.experiment_dir,
-                                                                               s + '_cert_' + 'epoch_' + str(
-                                                                                   self.epoch - 1)))
+                            saveTensorToImages(outputs, item_idxs, os.path.join(self.experiment_dir,
+                                                                                s + '_output_' + 'epoch_' + str(
+                                                                                    self.epoch - 1)))
+                            saveTensorToImages(cout * 255, item_idxs, os.path.join(self.experiment_dir,
+                                                                                   s + '_cert_' + 'epoch_' + str(
+                                                                                       self.epoch - 1)))
 
-                    i += 1
+                        i += 1
+                        err['Skipped'] .update(0, 1)
+                    except:
+                        err['Skipped'] .update(1, 1)
 
                 print('Evaluation results on [{}]:\n============================='.format(s))
                 print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
