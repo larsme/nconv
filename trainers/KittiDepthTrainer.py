@@ -52,43 +52,54 @@ class KittiDepthTrainer(Trainer):
     def train(self):
         print('#############################\n### Experiment Parameters ###\n#############################')
         for k, v in self.params.items(): print('{0:<22s} : {1:}'.format(k,v))
-                                                
-        # Load last save checkpoint
-        if self.use_load_checkpoint != None:
-            if self.use_load_checkpoint > 0:
-                print('\n=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
-                if self.load_checkpoint(self.use_load_checkpoint):
-                    print('Checkpoint was loaded successfully!\n')
-            elif self.use_load_checkpoint == -1:
-                print('=> Loading last checkpoint ...', end=' ')
-                if self.load_checkpoint():
-                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
 
-        for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
-            self.epoch = epoch
-                                   
-            # Decay Learning Rate 
-            self.lr_scheduler.step() # LR decay
-            
-            print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
+        success = False
 
-            
-            # Train the epoch
-            loss_meter = self.train_epoch()
-            
-            # Add the average loss for this epoch to stats
-            for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
-            
-            # Save checkpoint
-            if self.use_save_checkpoint and (self.epoch) % self.save_chkpt_each == 0:                    
-                self.save_checkpoint()
-                print('\n => Checkpoint was saved successfully!')
-                        
-            
-        # Save the final model
-        torch.save(self.net, self.experiment_dir + '/final_model.pth')
-        
-        print("Training Finished.\n")
+        while not success:
+            try:
+                # Load last save checkpoint
+                if self.use_load_checkpoint is not None:
+                    if self.use_load_checkpoint > 0:
+                        print('\n=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
+                        if self.load_checkpoint(self.use_load_checkpoint):
+                            print('Checkpoint was loaded successfully!\n')
+                    elif self.use_load_checkpoint == -1:
+                        print('=> Loading last checkpoint ...', end=' ')
+                        if self.load_checkpoint():
+                            print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
+                if self.epoch-1 == self.params['num_epochs']:
+                    success = True
+                    break
+
+                for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
+                    self.epoch = epoch
+
+                    # Decay Learning Rate
+                    self.lr_scheduler.step() # LR decay
+
+                    print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
+
+
+                    # Train the epoch
+                    loss_meter = self.train_epoch()
+
+                    # Add the average loss for this epoch to stats
+                    for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
+
+                    # Save checkpoint
+                    if self.use_save_checkpoint and (self.epoch) % self.save_chkpt_each == 0:
+                        self.save_checkpoint()
+                        print('\n => Checkpoint was saved successfully!')
+
+
+                # Save the final model
+                torch.save(self.net, self.experiment_dir + '/final_model.pth')
+                success = True
+                break
+            except:
+                continue
+
+            print("Training Finished.\n")
             
         return self.net
 
