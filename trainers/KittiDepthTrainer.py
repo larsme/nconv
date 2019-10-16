@@ -53,53 +53,53 @@ class KittiDepthTrainer(Trainer):
         print('#############################\n### Experiment Parameters ###\n#############################')
         for k, v in self.params.items(): print('{0:<22s} : {1:}'.format(k,v))
 
-        success = False
+        # success = False
 
-        while not success:
-            try:
-                # Load last save checkpoint
-                if self.use_load_checkpoint is not None:
-                    if self.use_load_checkpoint > 0:
-                        print('\n=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
-                        if self.load_checkpoint(self.use_load_checkpoint):
-                            print('Checkpoint was loaded successfully!\n')
-                    elif self.use_load_checkpoint == -1:
-                        print('=> Loading last checkpoint ...', end=' ')
-                        if self.load_checkpoint():
-                            print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
-                if self.epoch-1 == self.params['num_epochs']:
-                    success = True
-                    break
+        # while not success:
+        #     try:
+        # Load last save checkpoint
+        if self.use_load_checkpoint is not None:
+            if self.use_load_checkpoint > 0:
+                print('\n=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
+                if self.load_checkpoint(self.use_load_checkpoint):
+                    print('Checkpoint was loaded successfully!\n')
+            elif self.use_load_checkpoint == -1:
+                print('=> Loading last checkpoint ...', end=' ')
+                if self.load_checkpoint():
+                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
+        # if self.epoch-1 == self.params['num_epochs']:
+            # success = True
+            # break
 
-                for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
-                    self.epoch = epoch
+        for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
+            self.epoch = epoch
 
-                    # Decay Learning Rate
-                    self.lr_scheduler.step() # LR decay
+            # Decay Learning Rate
+            self.lr_scheduler.step() # LR decay
 
-                    print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
-
-
-                    # Train the epoch
-                    loss_meter = self.train_epoch()
-
-                    # Add the average loss for this epoch to stats
-                    for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
-
-                    # Save checkpoint
-                    if self.use_save_checkpoint and (self.epoch) % self.save_chkpt_each == 0:
-                        self.save_checkpoint()
-                        print('\n => Checkpoint was saved successfully!')
+            print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
 
 
-                # Save the final model
-                torch.save(self.net, self.experiment_dir + '/final_model.pth')
-                success = True
-                break
-            except:
-                continue
+            # Train the epoch
+            loss_meter = self.train_epoch()
 
-            print("Training Finished.\n")
+            # Add the average loss for this epoch to stats
+            for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
+
+            # Save checkpoint
+            if self.use_save_checkpoint and (self.epoch) % self.save_chkpt_each == 0:
+                self.save_checkpoint()
+                print('\n => Checkpoint was saved successfully!')
+
+
+        # Save the final model
+        torch.save(self.net, self.experiment_dir + '/final_model.pth')
+        # success = True
+        # break
+            # except:
+            #     continue
+
+        print("Training Finished.\n")
             
         return self.net
 
@@ -194,64 +194,32 @@ class KittiDepthTrainer(Trainer):
             i = 0
             for data in self.dataloaders[s]:
                 print('train batch %d of %d on %s set' % (i, len(self.dataloaders[s]), s))
-                try:
-                    if self.load_rgb:
-                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        inputs_rgb = inputs_rgb.to(device)
-                        predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
-                                                                        inputs_rgb)
-                    else:
-                        sparse_depth, gt_depth, item_idxs = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
+                if self.load_rgb:
+                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                    sparse_depth = sparse_depth.to(device)
+                    gt_depth = gt_depth.to(device)
+                    inputs_rgb = inputs_rgb.to(device)
+                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
+                                                                    inputs_rgb)
+                else:
+                    sparse_depth, gt_depth, item_idxs = data
+                    sparse_depth = sparse_depth.to(device)
+                    gt_depth = gt_depth.to(device)
+                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
 
-                    # Calculate loss for valid pixel in the ground truth
-                    loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
+                # Calculate loss for valid pixel in the ground truth
+                loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
 
-                    # backward + optimize only if in training phase
-                    if s == 'train':
-                        loss.backward()
-                        self.optimizer.step()
+                # backward + optimize only if in training phase
+                if s == 'train':
+                    loss.backward()
+                    self.optimizer.step()
 
-                    self.optimizer.zero_grad()
+                self.optimizer.zero_grad()
 
-                    # statistics
-                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
-                    i += 1
-                except:
-                    #try once more
-                    try:
-                        if self.load_rgb:
-                            sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                            sparse_depth = sparse_depth.to(device)
-                            gt_depth = gt_depth.to(device)
-                            inputs_rgb = inputs_rgb.to(device)
-                            predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
-                                                                            inputs_rgb)
-                        else:
-                            sparse_depth, gt_depth, item_idxs = data
-                            sparse_depth = sparse_depth.to(device)
-                            gt_depth = gt_depth.to(device)
-                            predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
-
-                        # Calculate loss for valid pixel in the ground truth
-                        loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
-
-                        # backward + optimize only if in training phase
-                        if s == 'train':
-                            loss.backward()
-                            self.optimizer.step()
-
-                        self.optimizer.zero_grad()
-
-                        # statistics
-                        loss_meter[s].update(loss.item(), sparse_depth.size(0))
-                        i += 1
-                    except:
-                        skipped += 1
+                # statistics
+                loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                i += 1
 
             print('[{}] Loss: {:.8f} Skipped{:.0f}'.format(s,  loss_meter[s].avg, skipped), end=' ')
 

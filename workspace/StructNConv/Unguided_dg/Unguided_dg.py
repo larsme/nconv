@@ -42,6 +42,9 @@ class CNN(torch.nn.Module):
         super().__init__()
 
         self.pos_fn = pos_fn
+        # Define Parameters
+        self.conv_init = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
+        EnforcePos.apply(self, 'conv_init', pos_fn)
 
         # shared pooling
         if maxpool_dg:
@@ -159,7 +162,8 @@ class CNN(torch.nn.Module):
         assert d_0.shape[3] % (self.nup_d.kernel_size**3) == 0
         assert d_0.shape == cd_0.shape
 
-        gx_0 = cgx_0 = gy_0 = cgy_0 = torch.zeros_like(cd_0)
+        gx_0 = gy_0 = torch.zeros_like(cd_0)
+        cgx_0 = cgy_0 = cd_0* self.conv_init
 
         # Stage 0
         gx_0, cgx_0, gy_0, cgy_0 = self.nconv1_g(d_0, cd_0, gx_0, cgx_0, gy_0, cgy_0)

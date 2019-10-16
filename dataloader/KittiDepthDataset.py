@@ -137,9 +137,9 @@ class KittiDepthDataset(Dataset):
 
         if self.load_rgb:
             if self.resize:
-                rgb = self.transform(rgb)
-            else:
                 rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
+            else:
+                rgb = self.transform(rgb)
 
         # Convert to numpy
         sparse_depth = np.array(sparse_depth, dtype=np.float16)
