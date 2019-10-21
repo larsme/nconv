@@ -12,286 +12,150 @@ import torch
 from torchvision import transforms
 import numpy as np
 import glob
+import cv2
 
 
-class KittiDepthDataset(Dataset):
-
-    def __init__(self, kitti_depth_path, setname='train', norm_factor=256, invert_depth=False,
-                 load_rgb=False, rgb_dir=None, rgb2gray=False,
-                 resize=True, center_crop=False, desired_image_width=1216, desired_image_height=352, lidar_padding=0):
-        self.kitti_depth_path = kitti_depth_path
+class OwnDepthDataset(Dataset):
+    def __init__(self, depth_paths, rgb_paths,
+                 rvec, tvec, undistorted_intrinsics,
+                 setname, load_rgb, rgb2gray,
+                 lidar_padding=0, image_width=2048, image_height=1536,
+                 desired_image_width=2048, desired_image_height=1536, ):
         self.setname = setname
-        if center_crop:
-            self.transform = transforms.Compose([transforms.CenterCrop((desired_image_height, desired_image_width))])
-        else:
-            self.transform = None
-        self.norm_factor = norm_factor
-        self.invert_depth = invert_depth
+        self.depth_paths = depth_paths
+        self.rgb_paths = rgb_paths
+        self.rvec = rvec
+        self.tvec = tvec
+        self.undistorted_intrinsics = undistorted_intrinsics
         self.load_rgb = load_rgb
-        self.rgb_dir = rgb_dir
         self.rgb2gray = rgb2gray
-        self.resize = resize
+        self.image_width = image_width
+        self.image_height = image_height
         self.desired_image_width = desired_image_width
         self.desired_image_height = desired_image_height
         self.lidar_padding = lidar_padding
 
-        if setname == 'train' or setname == 'val':
-            self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/*/*/velodyne_raw/*/*.png",
-                                                             recursive=True)))
-            self.gt_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/*/*/groundtruth/*/*.png",
-                                                         recursive=True)))
-            assert (len(self.sparse_depth_paths) == len(self.gt_depth_paths))
-        elif setname == 'selval':
-            self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/**/velodyne_raw/**.png",
-                                                             recursive=True)))
-            self.gt_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/**/groundtruth_depth/**.png",
-                                                         recursive=True)))
-            assert (len(self.sparse_depth_paths) == len(self.gt_depth_paths))
-        else:
-            self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/**/velodyne_raw/**.png",
-                                                             recursive=True)))
-            self.gt_depth_paths = []
-
     def __len__(self):
-        return len(self.sparse_depth_paths)
+        return len(self.depth_paths)
 
     def __getitem__(self, item):
         if item < 0 or item >= self.__len__():
             return None
 
+        input_depth_map, gt_depth_map = self.generate_depth_maps(item)
 
-        # Check if Data filename is equal to GT filename
-        if self.setname == 'train' or self.setname == 'val':
-            sparse_depth_path = self.sparse_depth_paths[item].split(self.setname)[1]
-            gt_depth_path = self.gt_depth_paths[item].split(self.setname)[1]
-            # print((sparse_depth_path, gt_depth_path))
-
-            assert (sparse_depth_path[0:25] == gt_depth_path[0:25])  # Check folder name
-
-            sparse_depth_path = sparse_depth_path.split('image')[1]
-            gt_depth_path = gt_depth_path.split('image')[1]
-
-            assert (sparse_depth_path == gt_depth_path)  # Check filename
-
-            # Set the certainty path
-            sep = str(self.sparse_depth_paths[item]).split('data_depth_velodyne')
-
-            s = (self.gt_depth_paths[item].split(self.setname)[1]).split('/')
-            drive_dir = s[1]
-            day_dir = drive_dir.split('_drive')[0]
-            img_source_dir = s[4]
-            img_idx_dir = s[5].split('.png')[0]
-            cam = img_source_dir.split('0')[1]
-            computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
-                                                self.desired_image_width, self.desired_image_height,
-                                                resize=self.resize, lidar_padding=self.lidar_padding)
-
-        elif self.setname == 'selval':
-            sparse_depth_path = self.sparse_depth_paths[item].split('00000')[1]
-            gt_depth_path = self.gt_depth_paths[item].split('00000')[1]
-            assert (sparse_depth_path == gt_depth_path)
-            # Set the certainty path
-            sep = str(self.sparse_depth_paths[item]).split('/velodyne_raw/')
-            assert self.lidar_padding == 0
-        else:
-            assert self.lidar_padding == 0
-
-        # Read RGB images
+        input_depth_map = torch.Tensor(input_depth_map).unsqueeze(0)
+        gt_depth_map = torch.Tensor(gt_depth_map).unsqueeze(0)
         if self.load_rgb:
-            if self.setname == 'train' or self.setname == 'val':
-                s = (self.gt_depth_paths[item].split(self.setname)[1]).split('/')
-                drive_dir = s[1]
-                day_dir = drive_dir.split('_drive')[0]
-                img_source_dir = s[4]
-                img_idx_dir = s[5]
-                rgb_path = self.rgb_dir + '/' + day_dir + '/' + drive_dir + '/' + img_source_dir + '/data/' + img_idx_dir
-            elif self.setname == 'selval':
-                sparse_depth_path = str(self.sparse_depth_paths[item])
-                idx = sparse_depth_path.find('velodyne_raw')
-                fname = sparse_depth_path[idx + 12:]
-                idx2 = fname.find('velodyne_raw')
-                rgb_path = sparse_depth_path[:idx] + 'image' + fname[:idx2] + 'image' + fname[idx2 + 12:]
-            elif self.setname == 'test':
-                sparse_depth_path = str(self.sparse_depth_paths[item])
-                idx = sparse_depth_path.find('velodyne_raw')
-                fname = sparse_depth_path[idx + 12:]
-                idx2 = fname.find('test')
-                rgb_path = sparse_depth_path[:idx] + 'image' + fname[idx2 + 4:]
-            rgb = Image.open(rgb_path)
-
-            if self.rgb2gray:
-                t = transforms.Grayscale(1)
-                rgb = t(rgb)
-
-        # Read images and convert them to 4D floats
-        sparse_depth = Image.open(str(self.sparse_depth_paths[item]))
-        gt_depth = Image.open(str(self.gt_depth_paths[item]))
-
-        # Apply transformations if given
-        if self.resize:
-            sparse_depth = sparse_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
-            gt_depth = gt_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
-        else:
-            sparse_depth = self.transform(sparse_depth)
-            gt_depth = self.transform(gt_depth)
-
-        if self.load_rgb:
-            if self.resize:
-                rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
-            else:
-                rgb = self.transform(rgb)
-
-        # Convert to numpy
-        sparse_depth = np.array(sparse_depth, dtype=np.float16)
-        gt_depth = np.array(gt_depth, dtype=np.float16)
-        if not (self.setname == 'train' or self.setname == 'val'):
-            computed_depth = sparse_depth
-
-        # Normalize the depth
-        sparse_depth = sparse_depth / self.norm_factor  #[0,1]
-        computed_depth = computed_depth / self.norm_factor  #[0,1]
-        gt_depth = gt_depth / self.norm_factor
-
-        # Expand dims into Pytorch format
-        sparse_depth = np.expand_dims(sparse_depth, 0)
-        computed_depth = np.expand_dims(computed_depth, 0)
-        gt_depth = np.expand_dims(gt_depth, 0)
-
-        # Convert to Pytorch Tensors
-        sparse_depth = torch.tensor(sparse_depth, dtype=torch.float)
-        computed_depth = torch.tensor(computed_depth, dtype=torch.float)
-        gt_depth = torch.tensor(gt_depth, dtype=torch.float)
-
-        # Convert depth to disparity
-        if self.invert_depth:
-            sparse_depth[sparse_depth == 0] = -1
-            sparse_depth = 1 / sparse_depth
-            sparse_depth[sparse_depth < 0] = 0
-
-            computed_depth[computed_depth == 0] = -1
-            computed_depth = 1 / computed_depth
-            computed_depth[computed_depth < 0] = 0
-
-            gt_depth[gt_depth == 0] = -1
-            gt_depth = 1 / gt_depth
-            gt_depth[gt_depth < 0] = 0
-
-        input_depth = sparse_depth if self.lidar_padding == 0 else computed_depth
-
-        # Convert RGB image to tensor
-        if self.load_rgb:
-            rgb = np.array(rgb, dtype=np.float16)
+            rgb = cv2.imread(self.rgb_paths[item])
+            rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
+            # Convert RGB image to tensor
             rgb /= 255
             if self.rgb2gray:
                 rgb = np.expand_dims(rgb, 0)
             else:
                 rgb = np.transpose(rgb, (2, 0, 1))
-            rgb = torch.tensor(rgb, dtype=torch.float)
-            return input_depth, gt_depth, item, rgb
+            rgb = torch.Tensor(rgb)
+            return input_depth_map, gt_depth_map, item, rgb
         else:
-            return input_depth, gt_depth, item
+            return input_depth_map, gt_depth_map, item
 
 
-def load_velodyne_points(filename):
-    """Load 3D point cloud from KITTI file format
-    (adapted from https://github.com/hunse/kitti)
+    def generate_depth_maps(self, item):
+        """Generate a depth map from velodyne data
+        Originally from monodepth2
+        """
+
+        # for item in range(self.depth_paths.__len__()):
+        # X Y Z Intensity Reflectivity Noise Range Ring ... (repeat)
+        # to x y z per line
+
+        lidar_scan = np.fromfile(self.depth_paths[item], dtype=np.float32).reshape(-1, 9)
+        points = lidar_scan[:, :3]
+
+        rot = np.array(cv2.Rodrigues(self.rvec)[0])
+        if self.setname=='train':
+            rot = rot.dot(rand_rotation_matrix())
+
+        projectedPoints = np.dot(self.undistorted_intrinsics,
+                                 (rot.dot(points.transpose()) + np.expand_dims(self.tvec, axis=1)))
+        depths = projectedPoints[2,:]
+        val = depths > 0
+        depths = depths[val]
+        u = np.round(projectedPoints[0, val]/self.image_width*self.desired_image_width/depths).astype(np.int_)
+        v = np.round(projectedPoints[1, val]/self.image_height*self.desired_image_height/depths).astype(np.int_)
+        val = (u >= -self.lidar_padding) & (v >= -self.lidar_padding) \
+              & (u < self.desired_image_width+self.lidar_padding) & (v < self.image_height+self.lidar_padding)
+
+        depths = depths[val]
+        v = v[val]
+        u = u[val]
+
+        random_order = np.random.permutation(range(depths.shape[0]))
+
+        input = random_order[:int(depths.shape[0]/2)]
+        input_depth_map = np.zeros((self.desired_image_height + 2 * self.lidar_padding,
+                                    self.desired_image_width + 2 * self.lidar_padding), np.float)
+        input_depth_map[v[input], u[input]] = depths[input]
+
+        gt = random_order[int(depths.shape[0]/2):]
+        val_gt = (u[gt] >= 0) & (v[gt] >= 0) & (u[gt] < self.desired_image_width) & (v[gt] < self.desired_image_height)
+        gt = gt[val_gt]
+        gt_depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
+        gt_depth_map[v[gt], u[gt]] = depths[gt]
+
+        # depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
+        # depth_map[v,u]=depths
+        #
+        # import matplotlib.pyplot as plt
+        # rgb = cv2.imread(self.rgb_paths[item])
+        #
+        # from mpl_toolkits.mplot3d import Axes3D
+        # fig = plt.figure('pc')
+        # ax = Axes3D(fig)
+        # ax.plot(points[:, 0], points[:, 1], points[:, 2], '.')
+        #
+        # cmap = plt.cm.get_cmap('nipy_spectral', 256)
+        # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+        #
+        # q1_lidar = np.quantile(depths, 0.05)
+        # q2_lidar = np.quantile(depths, 0.95)
+        # depth_img = cmap[
+        #             np.ndarray.astype(np.interp(depth_map, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+        #             :]  # depths
+        #
+        # # plt.figure('rgb')
+        # # plt.imshow(rgb)
+        # #
+        # # plt.figure('depth')
+        # # plt.imshow(depth_img)
+        # # plt.show()
+        # # path = self.depth_paths[item][:-40]+'depth_imgs/'+self.depth_paths[item][-14:-4]+'.png'
+        # # Image.fromarray(depth_img).save(path)
+        #
+        # Image._show(Image.fromarray(rgb))
+        # Image._show(Image.fromarray(depth_img))
+        # bla = 0
+
+        return input_depth_map, gt_depth_map
+
+
+def rand_rotation_matrix():
     """
-    points = np.fromfile(filename, dtype=np.float32).reshape(-1, 4)
-    # x,y,z,i (intensity of reflected laser)
-    points[:, 3] = 1.0  # homogeneous
-    return points
+    Creates a random rotation matrix.
 
-
-def read_calib_file(filepath):
-    ''' Read in a calibration file and parse into a dictionary.
-    Ref: https://github.com/utiasSTARS/pykitti/blob/master/pykitti/utils.py
-    '''
-    data = {}
-    with open(filepath, 'r') as f:
-        for line in f.readlines():
-            line = line.rstrip()
-            if len(line) == 0: continue
-            key, value = line.split(':', 1)
-            # The only non-float values in these files are dates, which
-            # we don't care about anyway
-            try:
-                data[key] = np.array([float(x) for x in value.split()])
-            except ValueError:
-                pass
-
-    return data
-
-
-def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0,
-                       resize=True, vel_depth=False):
-    """Generate a depth map from velodyne data
-    Originally from monodepth2
+    deflection: the magnitude of the rotation. For 0, no rotation; for 1, competely random
+    rotation. Small deflection => small perturbation.
+    randnums: 3 random numbers in the range [0, 1]. If `None`, they will be auto-generated.
     """
-    import os
-    kitti_raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../data/kitti_raw')
-    calib_dir = day_dir = os.path.join(kitti_raw_dir, day)
-    drive_dir = os.path.join(day_dir, drive)
-    velo_filename = os.path.join(drive_dir, 'velodyne_points', 'data', frame) + ".bin"
 
-    # load calibration files
-    cam2cam = read_calib_file(os.path.join(calib_dir, 'calib_cam_to_cam.txt'))
-    velo2cam = read_calib_file(os.path.join(calib_dir, 'calib_velo_to_cam.txt'))
-    velo2cam = np.hstack((velo2cam['R'].reshape(3, 3), velo2cam['T'][..., np.newaxis]))
-    velo2cam = np.vstack((velo2cam, np.array([0, 0, 0, 1.0])))
+    phi = np.random.uniform() * 2.0 * np.pi  # For direction of pole deflection.
 
-    # get image shape
-    im_shape = cam2cam["S_rect_02"][::-1].astype(np.int32)
-    if desired_image_width is None:
-        desired_image_width = im_shape[1]
-    if desired_image_height is None:
-        desired_image_height = im_shape[0]
+    flip = np.random.randint(0, 2) * 2 - 1
 
-    # compute projection matrix velodyne->image plane
-    R_cam2rect = np.eye(4)
-    R_cam2rect[:3, :3] = cam2cam['R_rect_00'].reshape(3, 3)
-    P_rect = cam2cam['P_rect_0' + str(cam)].reshape(3, 4)
-    P_velo2im = np.dot(np.dot(P_rect, R_cam2rect), velo2cam)
+    st = np.sin(phi)
+    ct = np.cos(phi)
 
-    # load velodyne points and remove all behind image plane (approximation)
-    # each row of the velodyne data is forward, left, up, reflectance
-    velo = load_velodyne_points(velo_filename)
-    velo = velo[velo[:, 0] >= 0, :]
+    R = np.array(((ct*flip, st*flip, 0), (-st, ct, 0), (0, 0, 1)))
 
-    # project the points to the camera
-    velo_pts_im = np.dot(P_velo2im, velo.T).T
-    velo_pts_im[:, :2] = velo_pts_im[:, :2] / velo_pts_im[:, 2][..., np.newaxis]
-
-    if vel_depth:
-        velo_pts_im[:, 2] = velo[:, 0]
-
-    # check if in bounds
-    # use minus 1 to get the exact same value as KITTI matlab code
-    if resize:
-        velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0] * desired_image_width / im_shape[1])
-        velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1] * desired_image_height / im_shape[0])
-    else:
-        # center crop
-        velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0] + (desired_image_width - im_shape[1]) / 2)
-        velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1] + (desired_image_height - im_shape[0]) / 2)
-
-    val_inds = (velo_pts_im[:, 0] >= -lidar_padding) \
-               & (velo_pts_im[:, 1] >= -lidar_padding) \
-               & (velo_pts_im[:, 0] < desired_image_width+lidar_padding) \
-               & (velo_pts_im[:, 1] < desired_image_height+lidar_padding) \
-               & (velo_pts_im[:, 2] > 0)  # positive depth
-    velo_pts_im = velo_pts_im[val_inds, :]
-
-    # project to image
-    sparse_depth_map = np.zeros((desired_image_height+2*lidar_padding, desired_image_width+2*lidar_padding), np.float)
-    for i in range(velo_pts_im.shape[0]):
-        px = int(velo_pts_im[i, 0]) + lidar_padding
-        py = int(velo_pts_im[i, 1]) + lidar_padding
-        depth = velo_pts_im[i, 2]
-        if sparse_depth_map[py, px] == 0 or sparse_depth_map[py, px] > depth:
-            # for conflicts, use closer point
-            sparse_depth_map[py, px] = depth
-            # lidarmap[py, px, 2] = 1 # mask
-            # lidarmap[py, px, 1] = pc_velo[i, 3]
-            # lidarmap[py, px, 2] = times[i]
-
-    return sparse_depth_map * 255
+    return R

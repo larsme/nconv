@@ -21,6 +21,7 @@ from torch.optim import lr_scheduler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 from dataloader.KittiDepthDataloader import KittiDepthDataloader
+from dataloader.OwnDepthDataloader import OwnDepthDataloader
 from modules.losses import ConfLossDecay, SmoothL1Loss, MSELoss
 
 # Fix CUDNN error for non-contiguous inputs
@@ -92,8 +93,12 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
     # Use GPU or not
     device = torch.device("cuda:"+str(params['gpu_id']) if torch.cuda.is_available() else "cpu")
 
-    # Dataloader for KittiDepth
-    dataloaders, dataset_sizes = KittiDepthDataloader(params, sets)
+    if 'kitti_rgb_dataset_dir' in params:
+        # Dataloader for KittiDepth
+        dataloaders, dataset_sizes = KittiDepthDataloader(params, sets)
+    else:
+        # Dataloader for Own Depth
+        dataloaders, dataset_sizes = OwnDepthDataloader(params, sets)
 
     # Import the network file
     f = importlib.import_module(network_path.replace('/', '.'))
