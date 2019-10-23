@@ -43,7 +43,7 @@ def KittiDepthDataloader(params, sets):
             image_datasets['train'].gt_depth_paths = image_datasets['train'].gt_depth_paths[0:params['train_on']]
 
         dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
-                                          num_workers=1)
+                                          num_workers=4)
         dataset_sizes['train'] = {len(image_datasets['train'])}
     
     
@@ -58,7 +58,7 @@ def KittiDepthDataloader(params, sets):
                                                   resize=True, center_crop=False, lidar_padding=lidar_padding,
                                                   desired_image_width=1216, desired_image_height=352)
         dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
-                                        num_workers=1)
+                                        num_workers=4)
         dataset_sizes['val'] = {len(image_datasets['val'])}
 
 
@@ -72,7 +72,7 @@ def KittiDepthDataloader(params, sets):
                                                      resize=False, center_crop=False, lidar_padding=lidar_padding)
 
         dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'],
-                                           num_workers=1)
+                                           num_workers=4)
         dataset_sizes['selval'] = {len(image_datasets['selval'])}
 
 
@@ -87,7 +87,7 @@ def KittiDepthDataloader(params, sets):
                                                    resize=False, center_crop=False, lidar_padding=lidar_padding)
 
         dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'],
-                                         num_workers=1)
+                                         num_workers=4)
         dataset_sizes['test'] = {len(image_datasets['test'])}
 
     print(dataset_sizes)

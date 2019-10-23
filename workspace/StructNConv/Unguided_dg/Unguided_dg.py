@@ -18,6 +18,7 @@ from modules.StructNConv.StructNConv2D_d import StructNConv2D_d
 from modules.StructNConv.StructNDeconv2D import StructNDeconv2D
 from modules.StructNConv.NearestNeighbourUpsample import NearestNeighbourUpsample
 
+from modules.NConv2D import EnforcePos
 
 class CNN(torch.nn.Module):
 

@@ -106,7 +106,13 @@
 #CUDA_LAUNCH_BLOCKING=1 python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/Default -exp_subdir 4
 
 
+
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 4
 #
+
 #python run_nconv_cnn.py  -mode traineval -network_file Guided_ds_simple -ws_path workspace/StructNConv/Guided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 1
 #python run_nconv_cnn.py  -mode traineval -network_file Guided_ds_simple -ws_path workspace/StructNConv/Guided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 2
 #python run_nconv_cnn.py  -mode traineval -network_file Guided_ds_simple -ws_path workspace/StructNConv/Guided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 3
@@ -117,18 +123,13 @@
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 1
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 2
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 3
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 4
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 4
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 1
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 2
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 3
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg -params_sub_dir Experiments/Default -exp_subdir 4
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 4
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 1
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 2
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 3
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 4
-#
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dsg -ws_path workspace/StructNConv/Unguided_dsg -params_sub_dir Experiments/Default -exp_subdir 1
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dsg -ws_path workspace/StructNConv/Unguided_dsg -params_sub_dir Experiments/Default -exp_subdir 2
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dsg -ws_path workspace/StructNConv/Unguided_dsg -params_sub_dir Experiments/Default -exp_subdir 3

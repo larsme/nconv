@@ -28,8 +28,8 @@ class SobelEdge(torch.nn.Module):
 
     def forward(self, rgb):
         single_channel = F.pad(F.conv2d(rgb, self.channel_weights), (1, 1, 1, 1), mode='replicate')
-        s = torch.exp(torch.abs(F.conv2d(single_channel, self.sobel_weight_1)))\
-            * torch.exp(torch.abs(F.conv2d(single_channel, self.sobel_weight_2)))
+        s = torch.exp(-torch.abs(F.conv2d(single_channel, self.sobel_weight_1)))\
+            * torch.exp(-torch.abs(F.conv2d(single_channel, self.sobel_weight_2)))
         cs = torch.ones_like(s)
 
         return s, cs
