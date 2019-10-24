@@ -29,6 +29,7 @@ def OwnDepthDataloader(params, sets):
 
     calib_dir = params['calib_dir']
     undistorted_intrinsics = np.loadtxt(calib_dir+'/UndistortedIntrinsics')
+    undistorted_intrinsics_old = np.loadtxt(calib_dir+'/UndistortedIntrinsicsOld')
     rvec = np.loadtxt(calib_dir+'/ExtrinsicsRVec')
     tvec = np.loadtxt(calib_dir+'/ExtrinsicsTVec')
     train_to_val_ratio = params['train_to_val_ratio']
@@ -38,7 +39,9 @@ def OwnDepthDataloader(params, sets):
     if load_rgb:
         rgb_paths = list(sorted(glob.iglob(rgb_dir + "/*.png")))
 
-        num_rgb = int(rgb_paths[0].split(rgb_dir+'/')[1].split('.png')[0])
+        rgb_delay = 6
+        # rgb_delay=0
+        num_rgb = int(rgb_paths[0].split(rgb_dir+'/')[1].split('.png')[0])+rgb_delay
         num_depth = int(depth_paths[1].split(depth_dir+'/')[1].split('.bin')[0])
         i_rgb = 0
         i_depth = 0
@@ -63,7 +66,7 @@ def OwnDepthDataloader(params, sets):
             elif num_rgb < num_depth:
                 i_rgb += 1
                 if i_rgb < rgb_paths.__len__():
-                    num_rgb = int(rgb_paths[i_rgb].split(rgb_dir+'/')[1].split('.png')[0])
+                    num_rgb = int(rgb_paths[i_rgb].split(rgb_dir+'/')[1].split('.png')[0])+rgb_delay
                 else:
                     break
             else:
@@ -72,7 +75,7 @@ def OwnDepthDataloader(params, sets):
                 i_rgb += 1
                 i_depth += 1
                 if i_rgb < rgb_paths.__len__() and i_depth < depth_paths.__len__():
-                    num_rgb = int(rgb_paths[i_rgb].split(rgb_dir+'/')[1].split('.png')[0])
+                    num_rgb = int(rgb_paths[i_rgb].split(rgb_dir+'/')[1].split('.png')[0])+rgb_delay
                     num_depth = int(depth_paths[i_rgb].split(depth_dir+'/')[1].split('.bin')[0])
                 else:
                     break
@@ -110,7 +113,7 @@ def OwnDepthDataloader(params, sets):
 ###### Training Set ######
     if 'train' in sets:
         image_datasets['train'] = OwnDepthDataset(train_depth_paths, train_rgb_paths,
-                                                  rvec, tvec, undistorted_intrinsics,
+                                                  rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                                                   setname='train',
                                                   load_rgb=load_rgb, rgb2gray=rgb2gray,
                                                   lidar_padding=lidar_padding, image_width=2048, image_height=1536,
@@ -125,7 +128,7 @@ def OwnDepthDataloader(params, sets):
 ###### Validation Set ######
     if 'val' in sets:
         image_datasets['val'] = OwnDepthDataset(val_depth_paths, val_rgb_paths,
-                                                rvec, tvec, undistorted_intrinsics,
+                                                rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                                                 setname='val',
                                                 load_rgb=load_rgb, rgb2gray=rgb2gray,
                                                 lidar_padding=lidar_padding, image_width=2048, image_height=1536,

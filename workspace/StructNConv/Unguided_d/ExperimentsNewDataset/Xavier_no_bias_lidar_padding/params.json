@@ -30,7 +30,7 @@
     "use_conv_bias_d": false,
     "use_deconv_bias_d": false,
     "devalue_pooled_confidence": true,
-    "lidar_padding": 0,
+    "lidar_padding": 38,
     "num_epochs": 3,
     "save_chkpt_each": 1,
     "save_out_imgs": false,

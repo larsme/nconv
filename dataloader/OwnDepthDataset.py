@@ -17,7 +17,7 @@ import cv2
 
 class OwnDepthDataset(Dataset):
     def __init__(self, depth_paths, rgb_paths,
-                 rvec, tvec, undistorted_intrinsics,
+                 rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                  setname, load_rgb, rgb2gray,
                  lidar_padding=0, image_width=2048, image_height=1536,
                  desired_image_width=2048, desired_image_height=1536, ):
@@ -27,6 +27,7 @@ class OwnDepthDataset(Dataset):
         self.rvec = rvec
         self.tvec = tvec
         self.undistorted_intrinsics = undistorted_intrinsics
+        self.undistorted_intrinsics_old = undistorted_intrinsics_old
         self.load_rgb = load_rgb
         self.rgb2gray = rgb2gray
         self.image_width = image_width
@@ -74,7 +75,7 @@ class OwnDepthDataset(Dataset):
         points = lidar_scan[:, :3]
 
         rot = np.array(cv2.Rodrigues(self.rvec)[0])
-        if self.setname=='train':
+        if not self.load_rgb and self.setname=='train':
             rot = rot.dot(rand_rotation_matrix())
 
         projectedPoints = np.dot(self.undistorted_intrinsics,
@@ -96,12 +97,26 @@ class OwnDepthDataset(Dataset):
         input = random_order[:int(depths.shape[0]/2)]
         input_depth_map = np.zeros((self.desired_image_height + 2 * self.lidar_padding,
                                     self.desired_image_width + 2 * self.lidar_padding), np.float)
-        input_depth_map[v[input], u[input]] = depths[input]
+        input_u = u[input]
+        input_v = v[input]
+        input_depths = depths[input]
+        for i in range(np.array(input_u).shape[0]):
+            d = input_depth_map[input_v[i], input_u[i]]
+            if d == 0 or d > depths[i]:
+                input_depth_map[input_v[i], input_u[i]] = input_depths[i]
 
         gt = random_order[int(depths.shape[0]/2):]
         val_gt = (u[gt] >= 0) & (v[gt] >= 0) & (u[gt] < self.desired_image_width) & (v[gt] < self.desired_image_height)
         gt = gt[val_gt]
         gt_depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
+        gt_u = u[gt]
+        gt_v = v[gt]
+        gt_depths = depths[gt]
+        for i in range(np.array(gt_u).shape[0]):
+            d = gt_depth_map[gt_v[i], gt_u[i]]
+            if d == 0 or d > depths[i]:
+                gt_depth_map[gt_v[i], gt_u[i]] = gt_depths[i]
+
         gt_depth_map[v[gt], u[gt]] = depths[gt]
 
         # depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
@@ -110,10 +125,10 @@ class OwnDepthDataset(Dataset):
         # import matplotlib.pyplot as plt
         # rgb = cv2.imread(self.rgb_paths[item])
         #
-        # from mpl_toolkits.mplot3d import Axes3D
-        # fig = plt.figure('pc')
-        # ax = Axes3D(fig)
-        # ax.plot(points[:, 0], points[:, 1], points[:, 2], '.')
+        # # from mpl_toolkits.mplot3d import Axes3D
+        # # fig = plt.figure('pc')
+        # # ax = Axes3D(fig)
+        # # ax.plot(points[:, 0], points[:, 1], points[:, 2], '.')
         #
         # cmap = plt.cm.get_cmap('nipy_spectral', 256)
         # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
@@ -134,6 +149,37 @@ class OwnDepthDataset(Dataset):
         # # Image.fromarray(depth_img).save(path)
         #
         # Image._show(Image.fromarray(rgb))
+        # Image._show(Image.fromarray(depth_img))
+        # bla = 0
+
+
+        # projectedPoints = np.dot(self.undistorted_intrinsics_old,
+        #                          (rot.dot(points.transpose()) + np.expand_dims(self.tvec, axis=1)))
+        # depths = projectedPoints[2,:]
+        # val = depths > 0
+        # depths = depths[val]
+        # u = np.round(projectedPoints[0, val]/self.image_width*self.desired_image_width/depths).astype(np.int_)
+        # v = np.round(projectedPoints[1, val]/self.image_height*self.desired_image_height/depths).astype(np.int_)
+        # val = (u >= -self.lidar_padding) & (v >= -self.lidar_padding) \
+        #       & (u < self.desired_image_width+self.lidar_padding) & (v < self.image_height+self.lidar_padding)
+        #
+        # depths = depths[val]
+        # v = v[val]
+        # u = u[val]
+        # depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
+        # for i in range(np.array(u).shape[0]):
+        #     d = depth_map[v[i], u[i]]
+        #     if d == 0 or d > depths[i]:
+        #         depth_map[v[i], u[i]] = depths[i]
+        #
+        # cmap = plt.cm.get_cmap('nipy_spectral', 256)
+        # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+        #
+        # q1_lidar = np.quantile(depths, 0.05)
+        # q2_lidar = np.quantile(depths, 0.95)
+        # depth_img = cmap[
+        #             np.ndarray.astype(np.interp(depth_map, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+        #             :]  # depths
         # Image._show(Image.fromarray(depth_img))
         # bla = 0
 
