@@ -2,12 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding/params.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/1/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/2/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_180/1/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_180/2/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_180/3/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_180/4/error_val_epoch_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_180/params.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_90/params.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dataloader/OwnDepthDataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/OwnDepthDataloader.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dataloader/OwnDepthDataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/OwnDepthDataset.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/params.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -32,19 +40,19 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset" />
       <recent name="$PROJECT_DIR$/dataloader" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Guided_ds_simple" />
       <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\modules\StructNConv" />
       <recent name="$PROJECT_DIR$/modules/StructNConv" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments/Default" />
     </key>
   </component>
   <component name="RunDashboard">

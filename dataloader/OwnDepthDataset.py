@@ -20,7 +20,8 @@ class OwnDepthDataset(Dataset):
                  rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                  setname, load_rgb, rgb2gray,
                  lidar_padding=0, image_width=2048, image_height=1536,
-                 desired_image_width=2048, desired_image_height=1536, ):
+                 desired_image_width=2048, desired_image_height=1536,
+                 do_flip=False, rotate_by=0):
         self.setname = setname
         self.depth_paths = depth_paths
         self.rgb_paths = rgb_paths
@@ -35,6 +36,8 @@ class OwnDepthDataset(Dataset):
         self.desired_image_width = desired_image_width
         self.desired_image_height = desired_image_height
         self.lidar_padding = lidar_padding
+        self.do_flip = do_flip
+        self.rotate_by = rotate_by
 
     def __len__(self):
         return len(self.depth_paths)
@@ -57,6 +60,10 @@ class OwnDepthDataset(Dataset):
             else:
                 rgb = np.transpose(rgb, (2, 0, 1))
             rgb = torch.Tensor(rgb)
+            if self.do_flip:
+                input_depth_map = torch.flip(input_depth_map, 3)
+                gt_depth_map = torch.flip(gt_depth_map, 3)
+                rgb = torch.flip(rgb, 3)
             return input_depth_map, gt_depth_map, item, rgb
         else:
             return input_depth_map, gt_depth_map, item
@@ -75,8 +82,8 @@ class OwnDepthDataset(Dataset):
         points = lidar_scan[:, :3]
 
         rot = np.array(cv2.Rodrigues(self.rvec)[0])
-        if not self.load_rgb and self.setname=='train':
-            rot = rot.dot(rand_rotation_matrix())
+        if not self.load_rgb:
+            rot = rot.dot(rand_rotation_matrix(self.do_flip, self.rotate_by))
 
         projectedPoints = np.dot(self.undistorted_intrinsics,
                                  (rot.dot(points.transpose()) + np.expand_dims(self.tvec, axis=1)))
@@ -86,7 +93,7 @@ class OwnDepthDataset(Dataset):
         u = np.round(projectedPoints[0, val]/self.image_width*self.desired_image_width/depths).astype(np.int_)
         v = np.round(projectedPoints[1, val]/self.image_height*self.desired_image_height/depths).astype(np.int_)
         val = (u >= -self.lidar_padding) & (v >= -self.lidar_padding) \
-              & (u < self.desired_image_width+self.lidar_padding) & (v < self.image_height+self.lidar_padding)
+            & (u < self.desired_image_width+self.lidar_padding) & (v < self.image_height+self.lidar_padding)
 
         depths = depths[val]
         v = v[val]
@@ -186,7 +193,7 @@ class OwnDepthDataset(Dataset):
         return input_depth_map, gt_depth_map
 
 
-def rand_rotation_matrix():
+def rand_rotation_matrix(do_flip, rotate_by):
     """
     Creates a random rotation matrix.
 
@@ -195,13 +202,16 @@ def rand_rotation_matrix():
     randnums: 3 random numbers in the range [0, 1]. If `None`, they will be auto-generated.
     """
 
-    phi = np.random.uniform() * 2.0 * np.pi  # For direction of pole deflection.
+    phi = np.random.uniform(-rotate_by / 180 * np.pi, rotate_by / 180 * np.pi)
 
-    flip = np.random.randint(0, 2) * 2 - 1
+    if do_flip:
+        flip = np.random.randint(0, 2) * 2 - 1
+    else:
+        flip = 1
 
     st = np.sin(phi)
     ct = np.cos(phi)
 
-    R = np.array(((ct*flip, st*flip, 0), (-st, ct, 0), (0, 0, 1)))
+    R = np.array(((ct, st, 0), (-st*flip, ct*flip, 0), (0, 0, 1)))
 
     return R

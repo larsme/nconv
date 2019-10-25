@@ -11,7 +11,7 @@
     "assign_only_true_matches": true,
     "load_rgb":false,
     "train_to_val_ratio": 0.7,
-    "rotate_augmentation": 0,
+    "rotate_augmentation": 90,
     "do_flip": true,
     "train_on": "full",
     "train_batch_sz": 3,

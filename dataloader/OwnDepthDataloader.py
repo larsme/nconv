@@ -117,7 +117,8 @@ def OwnDepthDataloader(params, sets):
                                                   setname='train',
                                                   load_rgb=load_rgb, rgb2gray=rgb2gray,
                                                   lidar_padding=lidar_padding, image_width=2048, image_height=1536,
-                                                  desired_image_width=2048, desired_image_height=1536)
+                                                  desired_image_width=2048, desired_image_height=1536,
+                                                  do_flip=params['do_flip'], rotate_by=params['rotate_augmentation'])
 
         dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
                                           num_workers=1)
@@ -132,7 +133,8 @@ def OwnDepthDataloader(params, sets):
                                                 setname='val',
                                                 load_rgb=load_rgb, rgb2gray=rgb2gray,
                                                 lidar_padding=lidar_padding, image_width=2048, image_height=1536,
-                                                desired_image_width=2048, desired_image_height=1536)
+                                                desired_image_width=2048, desired_image_height=1536,
+                                                do_flip=False, rotate_by=0)
         dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
                                         num_workers=1)
         dataset_sizes['val'] = {len(image_datasets['val'])}
