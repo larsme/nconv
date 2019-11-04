@@ -191,6 +191,12 @@ if __name__ == "__main__":
                      exp_subdir=args.exp_subdir,
                      mode='eval', sets=['obj'], checkpoint_num=args.checkpoint_num)\
                 .generate()
+        if args.mode == 'display':
+            # train the network
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     exp_subdir=args.exp_subdir,
+                     mode=args.mode, sets=['display'], checkpoint_num=args.checkpoint_num)\
+                .display()
         elif args.mode == 'count_parameters':
             count_parameters(training_ws_path=args.ws_path, network_file=args.network_file,
                              params_sub_dir=args.params_sub_dir)

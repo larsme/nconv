@@ -103,6 +103,70 @@ class KittiDepthTrainer(Trainer):
             
         return self.net
 
+    def display(self):
+        import PIL.Image as Image
+        import matplotlib.pyplot as plt
+
+
+        # Load last save checkpoint
+        if self.use_load_checkpoint != None:
+            if self.use_load_checkpoint > 0:
+                print('=> Loading checkpoint {} ...'.format(self.use_load_checkpoint), end=' ')
+                if self.load_checkpoint(self.use_load_checkpoint):
+                    print('Checkpoint was loaded successfully!')
+                else:
+                    print('Evaluating using initial parameters')
+            elif self.use_load_checkpoint == -1:
+                print('=> Loading last checkpoint ...', end=' ')
+                if self.load_checkpoint():
+                    print('Checkpoint was loaded successfully!')
+                else:
+                    print('Evaluating using initial parameters')
+
+        self.net.train(False)
+
+        device = torch.device('cuda:0' if self.use_gpu else 'cpu')
+
+        with torch.no_grad():
+            for s in self.sets:
+                # Iterate over data.
+                for data in self.dataloaders[s]:
+                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                    sparse_depth = sparse_depth.to(device)
+                    gt_depth = gt_depth.to(device)
+                    inputs_rgb = inputs_rgb.to(device)
+                    if self.load_rgb:
+                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
+                    else:
+                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
+
+                    Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0))*255).astype(np.uint8)).show()
+
+                    sparse_depth = sparse_depth.squeeze().cpu().numpy()
+                    q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
+                    q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
+                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+
+                    Image.fromarray(depth_img).show()
+
+                    outputs = outputs.squeeze().cpu().numpy()
+                    q1_lidar = np.quantile(outputs[outputs > 0], 0.05)
+                    q2_lidar = np.quantile(outputs[outputs > 0], 0.95)
+                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                    depth_img = cmap[
+                                np.ndarray.astype(np.interp(outputs, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                :]  # depths
+                    Image.fromarray(depth_img).show()
+                    bla = 0
+
+
     def return_one_prediction(self, inputs_d, inputs_rgb, original_width=None, original_height=None):
         # define the certainty
 

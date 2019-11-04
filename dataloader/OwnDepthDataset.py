@@ -51,8 +51,9 @@ class OwnDepthDataset(Dataset):
         input_depth_map = torch.Tensor(input_depth_map).unsqueeze(0)
         gt_depth_map = torch.Tensor(gt_depth_map).unsqueeze(0)
         if self.load_rgb:
-            rgb = cv2.imread(self.rgb_paths[item])
+            rgb = Image.fromarray(cv2.imread(self.rgb_paths[item]))
             rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
+            rgb = np.array(rgb, dtype=np.float16)
             # Convert RGB image to tensor
             rgb /= 255
             if self.rgb2gray:
@@ -101,7 +102,9 @@ class OwnDepthDataset(Dataset):
 
         random_order = np.random.permutation(range(depths.shape[0]))
 
-        input = random_order[:int(depths.shape[0]/2)]
+        num_inputs = int(depths.shape[0]/2) if not self.setname == 'disp' else depths.shape[0]
+
+        input = random_order[:num_inputs]
         input_depth_map = np.zeros((self.desired_image_height + 2 * self.lidar_padding,
                                     self.desired_image_width + 2 * self.lidar_padding), np.float)
         input_u = u[input]
@@ -112,7 +115,7 @@ class OwnDepthDataset(Dataset):
             if d == 0 or d > depths[i]:
                 input_depth_map[input_v[i], input_u[i]] = input_depths[i]
 
-        gt = random_order[int(depths.shape[0]/2):]
+        gt = random_order[num_inputs:]
         val_gt = (u[gt] >= 0) & (v[gt] >= 0) & (u[gt] < self.desired_image_width) & (v[gt] < self.desired_image_height)
         gt = gt[val_gt]
         gt_depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
@@ -125,70 +128,6 @@ class OwnDepthDataset(Dataset):
                 gt_depth_map[gt_v[i], gt_u[i]] = gt_depths[i]
 
         gt_depth_map[v[gt], u[gt]] = depths[gt]
-
-        # depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
-        # depth_map[v,u]=depths
-        #
-        # import matplotlib.pyplot as plt
-        # rgb = cv2.imread(self.rgb_paths[item])
-        #
-        # # from mpl_toolkits.mplot3d import Axes3D
-        # # fig = plt.figure('pc')
-        # # ax = Axes3D(fig)
-        # # ax.plot(points[:, 0], points[:, 1], points[:, 2], '.')
-        #
-        # cmap = plt.cm.get_cmap('nipy_spectral', 256)
-        # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-        #
-        # q1_lidar = np.quantile(depths, 0.05)
-        # q2_lidar = np.quantile(depths, 0.95)
-        # depth_img = cmap[
-        #             np.ndarray.astype(np.interp(depth_map, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-        #             :]  # depths
-        #
-        # # plt.figure('rgb')
-        # # plt.imshow(rgb)
-        # #
-        # # plt.figure('depth')
-        # # plt.imshow(depth_img)
-        # # plt.show()
-        # # path = self.depth_paths[item][:-40]+'depth_imgs/'+self.depth_paths[item][-14:-4]+'.png'
-        # # Image.fromarray(depth_img).save(path)
-        #
-        # Image._show(Image.fromarray(rgb))
-        # Image._show(Image.fromarray(depth_img))
-        # bla = 0
-
-
-        # projectedPoints = np.dot(self.undistorted_intrinsics_old,
-        #                          (rot.dot(points.transpose()) + np.expand_dims(self.tvec, axis=1)))
-        # depths = projectedPoints[2,:]
-        # val = depths > 0
-        # depths = depths[val]
-        # u = np.round(projectedPoints[0, val]/self.image_width*self.desired_image_width/depths).astype(np.int_)
-        # v = np.round(projectedPoints[1, val]/self.image_height*self.desired_image_height/depths).astype(np.int_)
-        # val = (u >= -self.lidar_padding) & (v >= -self.lidar_padding) \
-        #       & (u < self.desired_image_width+self.lidar_padding) & (v < self.image_height+self.lidar_padding)
-        #
-        # depths = depths[val]
-        # v = v[val]
-        # u = u[val]
-        # depth_map = np.zeros((self.desired_image_height, self.desired_image_width), np.float)
-        # for i in range(np.array(u).shape[0]):
-        #     d = depth_map[v[i], u[i]]
-        #     if d == 0 or d > depths[i]:
-        #         depth_map[v[i], u[i]] = depths[i]
-        #
-        # cmap = plt.cm.get_cmap('nipy_spectral', 256)
-        # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-        #
-        # q1_lidar = np.quantile(depths, 0.05)
-        # q2_lidar = np.quantile(depths, 0.95)
-        # depth_img = cmap[
-        #             np.ndarray.astype(np.interp(depth_map, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-        #             :]  # depths
-        # Image._show(Image.fromarray(depth_img))
-        # bla = 0
 
         return input_depth_map, gt_depth_map
 

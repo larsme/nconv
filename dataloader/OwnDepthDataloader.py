@@ -36,7 +36,7 @@ def OwnDepthDataloader(params, sets):
 
 
     depth_paths = list(sorted(glob.iglob(depth_dir + "/*.bin")))
-    if load_rgb:
+    if load_rgb or 'display' in sets:
         rgb_paths = list(sorted(glob.iglob(rgb_dir + "/*.png")))
 
         rgb_delay = 6
@@ -48,6 +48,10 @@ def OwnDepthDataloader(params, sets):
 
         shared_rgb_paths = []
         shared_depth_paths = []
+
+        disp_rgb_paths = []
+        disp_depth_paths = []
+        disp_num = 36095 - rgb_delay
 
         while True:
             if num_depth < num_rgb:
@@ -70,6 +74,9 @@ def OwnDepthDataloader(params, sets):
                 else:
                     break
             else:
+                if num_rgb == disp_num:
+                    disp_rgb_paths.append(rgb_paths[i_rgb])
+                    disp_depth_paths.append(depth_paths[i_depth])
                 shared_rgb_paths.append(rgb_paths[i_rgb])
                 shared_depth_paths.append(depth_paths[i_depth])
                 i_rgb += 1
@@ -121,7 +128,7 @@ def OwnDepthDataloader(params, sets):
                                                   do_flip=params['do_flip'], rotate_by=params['rotate_augmentation'])
 
         dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
-                                          num_workers=1)
+                                          num_workers=0)
         dataset_sizes['train'] = {len(image_datasets['train'])}
 
 
@@ -136,8 +143,20 @@ def OwnDepthDataloader(params, sets):
                                                 desired_image_width=2048, desired_image_height=1536,
                                                 do_flip=False, rotate_by=0)
         dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
-                                        num_workers=1)
+                                        num_workers=0)
         dataset_sizes['val'] = {len(image_datasets['val'])}
+
+    if 'display' in sets:
+        image_datasets['display'] = OwnDepthDataset(disp_depth_paths, disp_rgb_paths,
+                                                 rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
+                                                 setname='display',
+                                                 load_rgb=True, rgb2gray=rgb2gray,
+                                                 lidar_padding=lidar_padding, image_width=2048, image_height=1536,
+                                                 desired_image_width=2048, desired_image_height=1536,
+                                                 do_flip=False, rotate_by=0)
+        dataloaders['display'] = DataLoader(image_datasets['display'], shuffle=False, batch_size=1,
+                                        num_workers=0)
+        dataset_sizes['display'] = {len(image_datasets['display'])}
 
     print(dataset_sizes)
 
