@@ -62,9 +62,9 @@ class OwnDepthDataset(Dataset):
                 rgb = np.transpose(rgb, (2, 0, 1))
             rgb = torch.Tensor(rgb)
             if self.do_flip:
-                input_depth_map = torch.flip(input_depth_map, 3)
-                gt_depth_map = torch.flip(gt_depth_map, 3)
-                rgb = torch.flip(rgb, 3)
+                input_depth_map = torch.flip(input_depth_map, [2])
+                gt_depth_map = torch.flip(gt_depth_map, [2])
+                rgb = torch.flip(rgb, [2])
             return input_depth_map, gt_depth_map, item, rgb
         else:
             return input_depth_map, gt_depth_map, item
@@ -111,9 +111,9 @@ class OwnDepthDataset(Dataset):
         input_v = v[input]
         input_depths = depths[input]
         for i in range(np.array(input_u).shape[0]):
-            d = input_depth_map[input_v[i], input_u[i]]
+            d = input_depth_map[input_v[i]+self.lidar_padding, input_u[i]+self.lidar_padding]
             if d == 0 or d > depths[i]:
-                input_depth_map[input_v[i], input_u[i]] = input_depths[i]
+                input_depth_map[input_v[i]+self.lidar_padding, input_u[i]+self.lidar_padding] = input_depths[i]
 
         gt = random_order[num_inputs:]
         val_gt = (u[gt] >= 0) & (v[gt] >= 0) & (u[gt] < self.desired_image_width) & (v[gt] < self.desired_image_height)
