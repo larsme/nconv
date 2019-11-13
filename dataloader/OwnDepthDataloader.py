@@ -51,7 +51,7 @@ def OwnDepthDataloader(params, sets):
 
         disp_rgb_paths = []
         disp_depth_paths = []
-        disp_num = 36095 - rgb_delay
+        disp_num = 36083 + rgb_delay
 
         while True:
             if num_depth < num_rgb:

@@ -140,7 +140,10 @@ class KittiDepthTrainer(Trainer):
                     else:
                         outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
 
-                    Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0))*255).astype(np.uint8)).show()
+                    img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0))*255)
+                                              .astype(np.uint8))
+                    img_rgb.show()
+                    img_rgb.save('rgb.png')
 
                     sparse_depth = sparse_depth.squeeze().cpu().numpy()
                     q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
@@ -152,7 +155,9 @@ class KittiDepthTrainer(Trainer):
                                 np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
                                 :]  # depths
 
-                    Image.fromarray(depth_img).show()
+                    img_sparse_depth = Image.fromarray(depth_img)
+                    img_sparse_depth.show()
+                    img_rgb.save('lidar img.png')
 
                     outputs = outputs.squeeze().cpu().numpy()
                     q1_lidar = np.quantile(outputs[outputs > 0], 0.05)
@@ -163,7 +168,21 @@ class KittiDepthTrainer(Trainer):
                     depth_img = cmap[
                                 np.ndarray.astype(np.interp(outputs, (q1_lidar, q2_lidar), (0, 255)), np.int_),
                                 :]  # depths
-                    Image.fromarray(depth_img).show()
+                    img_pred_depth = Image.fromarray(depth_img)
+                    img_pred_depth.show()
+                    img_pred_depth.save('pred depth.png')
+
+
+                    cout = cout.squeeze().cpu().numpy()
+                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                    c_img = cmap[
+                                np.ndarray.astype(np.interp(outputs, (0, 1), (0, 255)), np.int_),
+                                :]  # depths
+                    img_pred_depth = Image.fromarray(c_img)
+                    img_pred_depth.show()
+                    img_pred_depth.save('pred certainty.png')
                     bla = 0
 
 

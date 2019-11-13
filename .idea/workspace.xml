@@ -2,17 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90/params.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided/params.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/network_exp_guided_nconv_cnn_l1.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dataloader/OwnDepthDataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/OwnDepthDataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/1/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180 error/1/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/2/error_val_epoch_3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180 error/2/error_val_epoch_3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_180 error/params.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_90/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_rotate_90/params.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/params.json" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/params.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataloader/OwnDepthDataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataloader/OwnDepthDataloader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainers/KittiDepthTrainer.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -64,7 +56,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Unguided_d New Dataset Guided">
+  <component name="RunManager" selected="Python.Unguided_d New Dataset disp">
     <configuration name="Count Paramerters NConv" type="PythonConfigurationType" factoryName="Python">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -493,11 +485,6 @@
           <url>file://$PROJECT_DIR$/modules/StructNConv/s_prod_KernelChannels.py</url>
           <line>142</line>
           <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/trainers/KittiDepthTrainer.py</url>
-          <line>166</line>
-          <option name="timeStamp" value="19" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
