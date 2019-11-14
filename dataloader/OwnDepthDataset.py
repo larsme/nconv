@@ -21,7 +21,7 @@ class OwnDepthDataset(Dataset):
                  setname, load_rgb, rgb2gray,
                  lidar_padding=0, image_width=2048, image_height=1536,
                  desired_image_width=2048, desired_image_height=1536,
-                 do_flip=False, rotate_by=0):
+                 do_flip=False, rotate_by=0, input_to_gt_ratio=0.5):
         self.setname = setname
         self.depth_paths = depth_paths
         self.rgb_paths = rgb_paths
@@ -38,6 +38,7 @@ class OwnDepthDataset(Dataset):
         self.lidar_padding = lidar_padding
         self.do_flip = do_flip
         self.rotate_by = rotate_by
+        self.input_to_gt_ratio = input_to_gt_ratio
 
     def __len__(self):
         return len(self.depth_paths)
@@ -102,7 +103,13 @@ class OwnDepthDataset(Dataset):
 
         random_order = np.random.permutation(range(depths.shape[0]))
 
-        num_inputs = int(depths.shape[0]/2) if not self.setname == 'disp' else depths.shape[0]
+        if self.setname == 'disp':
+            num_inputs = depths.shape[0]
+        elif self.input_to_gt_ratio == "Rand":
+            num_inputs = np.random.randint(1, depths.shape[0]-1)
+        else:
+            num_inputs = int(depths.shape[0]*self.input_to_gt_ratio)
+
 
         input = random_order[:num_inputs]
         input_depth_map = np.zeros((self.desired_image_height + 2 * self.lidar_padding,
