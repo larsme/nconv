@@ -103,7 +103,7 @@ class OwnDepthDataset(Dataset):
 
         random_order = np.random.permutation(range(depths.shape[0]))
 
-        if self.setname == 'disp':
+        if self.setname == 'display':
             num_inputs = depths.shape[0]
         elif self.input_to_gt_ratio == "Rand":
             num_inputs = np.random.randint(1, depths.shape[0]-1)
