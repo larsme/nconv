@@ -34,7 +34,7 @@
     "use_deconv_bias_d": false,
     "devalue_pooled_confidence": true,
     "lidar_padding": 38,
-    "num_epochs": 10,
+    "num_epochs": 6,
     "save_chkpt_each": 1,
     "save_out_imgs": false,
     "notes_to_self": "Unguided depth completion network trained on Depth"

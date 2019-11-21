@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided/1/error_train_epoch_6.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided/1/error_train_epoch_6.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -24,23 +24,23 @@
   <component name="ProjectId" id="1Oggb7r8ZdjQ5Mc6M0vf98E3yDU" />
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds_simple" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset" />
-      <recent name="$PROJECT_DIR$/dataloader" />
-      <recent name="$PROJECT_DIR$/workspace/StructNConv/Guided_ds_simple" />
-      <recent name="C:\Users\Lars\Dropbox\Uni\Masterarbeit\Masterarbeit-Netze\nconv\modules\StructNConv" />
-      <recent name="$PROJECT_DIR$/modules/StructNConv" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_dsg/Experiments" />
       <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/DeletedExperiments" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_ds_simple" />
+      <recent name="$PROJECT_DIR$/modules/StructNConv" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset" />
+      <recent name="$PROJECT_DIR$/dataloader" />
+      <recent name="$PROJECT_DIR$/workspace/StructNConv/Guided_ds_simple" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -55,7 +55,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Unguided_d New Dataset Guided disp">
+  <component name="RunManager" selected="Python.Unguided_d New Dataset disp">
     <configuration name="Count Paramerters NConv" type="PythonConfigurationType" factoryName="Python">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />

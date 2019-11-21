@@ -1,13 +1,13 @@
 Evaluation results on [val], Epoch [3]:
 ==========================================
-[Loss]: 0.04045108
-[MAE]: 0.42922544
-[RMSE]: 1.58044384
-[MRE]: 0.02786712
-[Delta1]: 0.49767673
-[Delta2]: 0.77575862
-[Delta3]: 0.87493628
-[Parameters]: 511.00000000
-[BatchDuration]: 0.16491950
-[Duration]: 0.03299834
+[Loss]: nan
+[MAE]: nan
+[RMSE]: nan
+[MRE]: nan
+[Delta1]: 0.00000000
+[Delta2]: 0.00000000
+[Delta3]: 0.00000000
+[Parameters]: 469.00000000
+[BatchDuration]: 0.15418240
+[Duration]: 0.03084998
 [Skipped]: 0.00000000

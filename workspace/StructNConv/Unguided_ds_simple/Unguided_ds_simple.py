@@ -13,6 +13,7 @@ from modules.StructNConv.StructNMaxPool2D_d_with_s import StructNMaxPool2D_d_wit
 
 from modules.StructNConv.StructNConv2D_s_with_d import StructNConv2D_s_with_d
 from modules.StructNConv.StructNConv2D_d_with_s_simple import StructNConv2D_d_with_s_simple
+from modules.StructNConv.StructNConv2D_d_with_s_simple5 import StructNConv2D_d_with_s_simple5
 from modules.StructNConv.StructNConv2D_d import StructNConv2D_d
 
 from modules.StructNConv.StructNDeconv2D import StructNDeconv2D
@@ -103,21 +104,21 @@ class CNN(torch.nn.Module):
 
         # depth modules
         # in_channels not 1 because of multiplication with output of nconv1_s
-        self.nconv1_d = StructNConv2D_d_with_s_simple(in_channels=num_channels, out_channels=num_channels,
-                                               channel_first=False,
-                                               pos_fn=pos_fn, init_method=params['init_method'],
-                                               use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                               kernel_size=5, stride=1, padding=2, dilation=1)
-        self.nconv2_d = StructNConv2D_d_with_s_simple(in_channels=num_channels, out_channels=num_channels,
-                                               channel_first=False,
-                                               pos_fn=pos_fn, init_method=params['init_method'],
-                                               use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                               kernel_size=5, stride=1, padding=2, dilation=1)
-        self.nconv3_d = StructNConv2D_d_with_s_simple(in_channels=num_channels, out_channels=num_channels,
-                                               channel_first=False,
-                                               pos_fn=pos_fn, init_method=params['init_method'],
-                                               use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
-                                               kernel_size=5, stride=1, padding=2, dilation=1)
+        self.nconv1_d = StructNConv2D_d_with_s_simple5(in_channels=num_channels, out_channels=num_channels,
+                                                       channel_first=False,
+                                                       pos_fn=pos_fn, init_method=params['init_method'],
+                                                       use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
+                                                       kernel_size=5, stride=1, padding=2, dilation=1)
+        self.nconv2_d = StructNConv2D_d_with_s_simple5(in_channels=num_channels, out_channels=num_channels,
+                                                       channel_first=False,
+                                                       pos_fn=pos_fn, init_method=params['init_method'],
+                                                       use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
+                                                       kernel_size=5, stride=1, padding=2, dilation=1)
+        self.nconv3_d = StructNConv2D_d_with_s_simple5(in_channels=num_channels, out_channels=num_channels,
+                                                       channel_first=False,
+                                                       pos_fn=pos_fn, init_method=params['init_method'],
+                                                       use_bias=use_conv_bias_d, const_bias_init=const_bias_init_d,
+                                                       kernel_size=5, stride=1, padding=2, dilation=1)
         # pooling
         if maxpool_d:
             self.npool_d = StructNMaxPool2D_d_with_s(kernel_size=2, stride=2, padding=0)

@@ -125,6 +125,12 @@
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 3
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 4
 
+
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds_simple -ws_path workspace/StructNConv/Unguided_ds_simple -params_sub_dir Experiments/Default -exp_subdir 4
+
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 1
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 2
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_dg -ws_path workspace/StructNConv/Unguided_dg_4_stage -params_sub_dir Experiments/Default -exp_subdir 3
@@ -160,27 +166,37 @@
 #python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias -exp_subdir 4
 #
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90_rand -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90_rand -exp_subdir 1
+#
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 1
+#
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 1
+#
+#python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 4
+#
+#
+#
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 4
+#
+#
+python run_nconv_cnn.py  -mode eval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 1 -checkpoint_num 6
+python run_nconv_cnn.py  -mode eval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 2 -checkpoint_num 6
+python run_nconv_cnn.py  -mode eval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 3 -checkpoint_num 6
+python run_nconv_cnn.py  -mode eval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 4 -checkpoint_num 6
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 1
-
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 1
-
-python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 1
-python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 2
-python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 3
-python run_nconv_cnn.py  -mode traineval -network_file network_exp_guided_nconv_cnn_l1 -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided -exp_subdir 4
-
-
-
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 2
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 3
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 1
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 2
+#python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 3
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90 -exp_subdir 4
 
+python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 1
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 2
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 3
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90 -exp_subdir 4
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90_rand -exp_subdir 2
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90_rand -exp_subdir 3
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir ExperimentsNewDataset/Xavier_no_bias_rotate_90_rand -exp_subdir 4

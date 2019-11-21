@@ -146,6 +146,10 @@ class KittiDepthTrainer(Trainer):
                     img_rgb.save('rgb.png')
 
                     sparse_depth = sparse_depth.squeeze().cpu().numpy()
+                    # sparse_depth[1:,:][sparse_depth[1:,:] == 0] = sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
+                    # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] = sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
+                    # sparse_depth[:,1:][sparse_depth[:,1:] == 0] = sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
+                    # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] = sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
                     q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
                     q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
                     cmap = plt.cm.get_cmap('nipy_spectral', 256)
@@ -157,7 +161,7 @@ class KittiDepthTrainer(Trainer):
 
                     img_sparse_depth = Image.fromarray(depth_img)
                     img_sparse_depth.show()
-                    img_rgb.save('lidar img.png')
+                    img_sparse_depth.save('lidar img.png')
 
                     outputs = outputs.squeeze().cpu().numpy()
                     q1_lidar = np.quantile(outputs[outputs > 0], 0.05)
