@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d7ef331c-a0b3-43ea-8174-63c593217fac" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided/1/error_train_epoch_6.txt" beforeDir="false" afterPath="$PROJECT_DIR$/workspace/StructNConv/Unguided_d/ExperimentsNewDataset/Xavier_no_bias_lidar_padding_rotate_90_guided/1/error_train_epoch_6.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_exp_script.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run_exp_script.sh" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -55,7 +55,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Unguided_d New Dataset disp">
+  <component name="RunManager" selected="Python.Unguided_d Xavier No Bias">
     <configuration name="Count Paramerters NConv" type="PythonConfigurationType" factoryName="Python">
       <module name="nconv" />
       <option name="INTERPRETER_OPTIONS" value="" />
