@@ -1,0 +1,19 @@
+- Channel before spatial (so there are 2 spatial convs in layer 1)
+- Symmetric Spatial Wheights
+	Assuming only directionless channels (since there are only 2 channels & depth is directionless):
+	a b a
+	c d c
+	e f e
+- ones
+	center pixel in spatial conv
+	weight from channel 2 to channel 2 in channelwise conv
+- deeper network if there are still places with cd = 0 at the end (there are in own dataet, maybe not in kitti)
+	alternatively
+	- "bias"
+		learned d, cd for cd = 0
+		1 value "constant" respectively => learned values at output
+	other options are possible (e.g. approx plane / LS with approx values for polinomial at output / ...)
+- structnconv
+	search structnconv_s_simple for errors, if there are none, test arg max(s/d+eps) or somethin similar in addition to nconv for spatial convolution
+	if stable solution exists, use simple guided net (edge detector -> s0), expand from there
+	
