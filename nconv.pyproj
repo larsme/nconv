@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{dd201173-3c5b-467e-99f7-35681f767435}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>run_nconv_cnn.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include=".gitignore" />
+    <Content Include="LICENSE" />
+    <Content Include="nconv_commands.md" />
+    <Content Include="pictures\old bugs\1\computed_lidar_img" />
+    <Content Include="pictures\old bugs\1\depth_img_computed" />
+    <Content Include="pictures\old bugs\1\depth_img_lidar" />
+    <Content Include="pictures\old bugs\1\gth_img" />
+    <Content Include="pictures\old bugs\1\img" />
+    <Content Include="pictures\old bugs\1\lidar_img" />
+    <Content Include="pictures\old bugs\2\computed_lidar_img" />
+    <Content Include="pictures\old bugs\2\depth_img_computed" />
+    <Content Include="pictures\old bugs\2\depth_img_lidar" />
+    <Content Include="pictures\old bugs\2\gth_img" />
+    <Content Include="pictures\old bugs\2\img" />
+    <Content Include="pictures\old bugs\2\lidar_img" />
+    <Content Include="pictures\old bugs\3\computed_lidar_img" />
+    <Content Include="pictures\old bugs\3\depth_img_computed" />
+    <Content Include="pictures\old bugs\3\depth_img_lidar" />
+    <Content Include="pictures\old bugs\3\gth_img" />
+    <Content Include="pictures\old bugs\3\img" />
+    <Content Include="pictures\old bugs\3\lidar_img" />
+    <Content Include="pictures\old bugs\Factor.png" />
+    <Content Include="pictures\old bugs\Offset.png" />
+    <Content Include="pictures\resizing\depth_img_computed" />
+    <Content Include="pictures\resizing\depth_img_computed_not_resized" />
+    <Content Include="pictures\resizing\img" />
+    <Content Include="README.md" />
+    <Content Include="requirements.in" />
+    <Content Include="run_exp_script.sh" />
+    <Content Include="workspace\exp_guided_enc_dec\checkpoints\CNN_ep0030.pth.tar" />
+    <Content Include="workspace\exp_guided_enc_dec\error_selval_epoch_30.txt" />
+    <Content Include="workspace\exp_guided_enc_dec\params.json" />
+    <Content Include="workspace\exp_guided_enc_dec\unguided_network_pretrained\CNN_ep0005.pth.tar" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l1\checkpoints\CNN_ep0040.pth.tar" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l1\error_selval_epoch_40.txt" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l1\params.json" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l1\unguided_network_pretrained\CNN_ep0005.pth.tar" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l2\checkpoints\CNN_ep0039.pth.tar" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l2\error_selval_epoch_39.txt" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l2\params.json" />
+    <Content Include="workspace\exp_guided_nconv_cnn_l2\unguided_network_pretrained\CNN_ep0005.pth.tar" />
+    <Content Include="workspace\exp_unguided_depth\checkpoints\CNN_ep0001.pth.tar" />
+    <Content Include="workspace\exp_unguided_depth\checkpoints\CNN_ep0002.pth.tar" />
+    <Content Include="workspace\exp_unguided_depth\checkpoints\CNN_ep0003.pth.tar" />
+    <Content Include="workspace\exp_unguided_depth\error_selval_epoch_1.txt" />
+    <Content Include="workspace\exp_unguided_depth\error_selval_epoch_2.txt" />
+    <Content Include="workspace\exp_unguided_depth\error_selval_epoch_3.txt" />
+    <Content Include="workspace\exp_unguided_depth\error_val_epoch_3.txt" />
+    <Content Include="workspace\exp_unguided_depth\params.json" />
+    <Content Include="workspace\exp_unguided_disparity\checkpoints\CNN_ep0001.pth.tar" />
+    <Content Include="workspace\exp_unguided_disparity\checkpoints\CNN_ep0002.pth.tar" />
+    <Content Include="workspace\exp_unguided_disparity\error_selval_epoch_1.txt" />
+    <Content Include="workspace\exp_unguided_disparity\error_selval_epoch_2.txt" />
+    <Content Include="workspace\exp_unguided_disparity\error_selval_epoch_3.txt" />
+    <Content Include="workspace\exp_unguided_disparity\error_val_epoch_3.txt" />
+    <Content Include="workspace\exp_unguided_disparity\final_model.pth" />
+    <Content Include="workspace\exp_unguided_disparity\params.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="dataloader\KittiDepthDataloader.py" />
+    <Compile Include="dataloader\KittiDepthDataset.py" />
+    <Compile Include="modules\losses.py" />
+    <Compile Include="modules\nconv.py" />
+    <Compile Include="run_nconv_cnn.py" />
+    <Compile Include="trainers\KittiDepthTrainer.py" />
+    <Compile Include="trainers\trainer.py" />
+    <Compile Include="utils\AverageMeter.py" />
+    <Compile Include="utils\error_metrics.py" />
+    <Compile Include="utils\saveTensorToImages.py" />
+    <Compile Include="workspace\exp_guided_enc_dec\network_exp_guided_enc_dec.py" />
+    <Compile Include="workspace\exp_guided_enc_dec\unguided_network_pretrained\unguided_network.py" />
+    <Compile Include="workspace\exp_guided_nconv_cnn_l1\network_exp_guided_nconv_cnn_l1.py" />
+    <Compile Include="workspace\exp_guided_nconv_cnn_l1\unguided_network_pretrained\unguided_network.py" />
+    <Compile Include="workspace\exp_guided_nconv_cnn_l2\network_exp_guided_nconv_cnn_l2.py" />
+    <Compile Include="workspace\exp_guided_nconv_cnn_l2\unguided_network_pretrained\unguided_network.py" />
+    <Compile Include="workspace\exp_unguided_depth\network_exp_unguided_depth.py" />
+    <Compile Include="workspace\exp_unguided_disparity\network_exp_unguided_disparity.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="dataloader" />
+    <Folder Include="modules" />
+    <Folder Include="pictures\" />
+    <Folder Include="pictures\old bugs" />
+    <Folder Include="pictures\old bugs\1\" />
+    <Folder Include="pictures\old bugs\2\" />
+    <Folder Include="pictures\old bugs\3\" />
+    <Folder Include="pictures\resizing\" />
+    <Folder Include="trainers" />
+    <Folder Include="utils" />
+    <Folder Include="workspace\" />
+    <Folder Include="workspace\exp_guided_enc_dec" />
+    <Folder Include="workspace\exp_guided_enc_dec\checkpoints\" />
+    <Folder Include="workspace\exp_guided_enc_dec\unguided_network_pretrained" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l1" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l1\checkpoints\" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l1\unguided_network_pretrained" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l2" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l2\checkpoints\" />
+    <Folder Include="workspace\exp_guided_nconv_cnn_l2\unguided_network_pretrained" />
+    <Folder Include="workspace\exp_unguided_depth" />
+    <Folder Include="workspace\exp_unguided_depth\checkpoints\" />
+    <Folder Include="workspace\exp_unguided_disparity" />
+    <Folder Include="workspace\exp_unguided_disparity\checkpoints\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>env</Id>
+      <Version>3.7</Version>
+      <Description>env (Python 3.7 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

@@ -4,8 +4,10 @@ __pycache__
 
 *.pyc
 
-venv/
+env/
 
 *.tar
 
 *.pth
+
+.vs/
