@@ -101,7 +101,7 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
         dataloaders, dataset_sizes = OwnDepthDataloader(params, sets)
 
     # Import the network file
-    f = importlib.import_module(network_path.replace('/', '.'))
+    f = importlib.import_module(network_path.replace('/', '.').replace('\\','.'))
     model = f.CNN(params).to(device)
 
     # Import the trainer

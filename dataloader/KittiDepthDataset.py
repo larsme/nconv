@@ -51,6 +51,8 @@ class KittiDepthDataset(Dataset):
             self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/**/velodyne_raw/**.png",
                                                              recursive=True)))
             self.gt_depth_paths = []
+        self.sparse_depth_paths = [x.replace('\\','/') for x in  self.sparse_depth_paths]
+        self.gt_depth_paths = [x.replace('\\','/') for x in  self.gt_depth_paths]
 
     def __len__(self):
         return len(self.sparse_depth_paths)
@@ -228,7 +230,7 @@ def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired
     Originally from monodepth2
     """
     import os
-    kitti_raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../data/kitti_raw')
+    kitti_raw_dir = os.path.abspath('C:\\Users\\Lars\\Git\\Programmierung\\nconv\\data\\kitti_rgb')
     calib_dir = day_dir = os.path.join(kitti_raw_dir, day)
     drive_dir = os.path.join(day_dir, drive)
     velo_filename = os.path.join(drive_dir, 'velodyne_points', 'data', frame) + ".bin"
