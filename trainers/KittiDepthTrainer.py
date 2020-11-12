@@ -74,14 +74,13 @@ class KittiDepthTrainer(Trainer):
         for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
             self.epoch = epoch
 
-            # Decay Learning Rate
-            self.lr_scheduler.step() # LR decay
-
             print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
-
 
             # Train the epoch
             loss_meter = self.train_epoch()
+            
+            # Decay Learning Rate
+            self.lr_scheduler.step() # LR decay
 
             # Add the average loss for this epoch to stats
             for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
@@ -280,7 +279,6 @@ class KittiDepthTrainer(Trainer):
             # Iterate over data.
             i = 0
             for data in self.dataloaders[s]:
-                print('train batch %d of %d on %s set' % (i, len(self.dataloaders[s]), s))
                 if self.load_rgb:
                     sparse_depth, gt_depth, item_idxs, inputs_rgb = data
                     sparse_depth = sparse_depth.to(device)
@@ -307,6 +305,7 @@ class KittiDepthTrainer(Trainer):
                 # statistics
                 loss_meter[s].update(loss.item(), sparse_depth.size(0))
                 i += 1
+                print('trained batch %d of %d on %s set - loss = ' % (i, len(self.dataloaders[s]), s, loss.item()))
 
             print('[{}] Loss: {:.8f} Skipped{:.0f}'.format(s,  loss_meter[s].avg, skipped), end=' ')
 

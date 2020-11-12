@@ -118,7 +118,7 @@ class StructNConv2D_d_with_s_simple(torch.nn.Module):
             d = nom / (denom+self.eps)
             cd = denom / (torch.sum(self.channel_weight)+self.eps)
         if self.use_bias:
-            d += self.bias
+            d = F.relu(d + self.bias)
 
         if self.devalue_pooled_confidence:
             return d, cd / self.stride / self.stride

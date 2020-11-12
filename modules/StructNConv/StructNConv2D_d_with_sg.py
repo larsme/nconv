@@ -140,6 +140,7 @@ class StructNConv2D_d_with_sg(torch.nn.Module):
 
         if self.use_bias:
             d += self.bias
+        d = F.relu(d)
 
         if self.devalue_pooled_confidence:
             return d, cd / self.stride / self.stride

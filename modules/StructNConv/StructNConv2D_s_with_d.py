@@ -78,6 +78,9 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             EnforcePos.apply(self, 'channel_weight', pos_fn)
             EnforcePos.apply(self, 'spatial_weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
+            EnforcePos.apply(self, 'w_s_from_d', 'test')
+
+
 
     def forward(self, d, cd, s, cs):
 
