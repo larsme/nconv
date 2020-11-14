@@ -84,7 +84,7 @@ class KittiDepthDataset(Dataset):
             img_source_dir = s[4]
             img_idx_dir = s[5].split('.png')[0]
             cam = img_source_dir.split('0')[1]
-            computed_depth = generate_depth_map(day_dir, drive_dir, img_idx_dir, cam,
+            computed_depth = generate_depth_map(self.rgb_dir, day_dir, drive_dir, img_idx_dir, cam,
                                                 self.desired_image_width, self.desired_image_height,
                                                 resize=self.resize, lidar_padding=self.lidar_padding)
 
@@ -224,13 +224,12 @@ def read_calib_file(filepath):
     return data
 
 
-def generate_depth_map(day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0,
+def generate_depth_map(kitti_raw_dir, day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0,
                        resize=True, vel_depth=False):
     """Generate a depth map from velodyne data
     Originally from monodepth2
     """
     import os
-    kitti_raw_dir = os.path.abspath('C:\\Users\\Lars\\Git\\Programmierung\\nconv\\data\\kitti_rgb')
     calib_dir = day_dir = os.path.join(kitti_raw_dir, day)
     drive_dir = os.path.join(day_dir, drive)
     velo_filename = os.path.join(drive_dir, 'velodyne_points', 'data', frame) + ".bin"

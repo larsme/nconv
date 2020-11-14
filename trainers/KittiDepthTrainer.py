@@ -5,7 +5,6 @@ __version__ = "0.1"
 __maintainer__ = "Abdelrahman Eldesokey"
 __email__ = "abdo.eldesokey@gmail.com"
 ########################################
-
 import os
 import sys
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,14 +19,14 @@ import matplotlib.pyplot as plt
 import os.path
 from utils.AverageMeter import AverageMeter
 from utils.saveTensorToImages import saveTensorToImages
-from utils.error_metrics import MAE, RMSE, MRE, Deltas
+from utils.error_metrics import MAE, RMSE, MRE, Deltas, wMAE, wRMSE, wMRE, wDeltas
 from dataloader.KittiDepthDataset import generate_depth_map
 
-err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3', 'Parameters', 'BatchDuration', 'Duration', 'Skipped']
+err_metrics = ['MAE', 'RMSE', 'MRE', 'Delta1', 'Delta2', 'Delta3', 'Parameters', 'BatchDuration', 'Duration', 'wMAE', 'wRMSE', 'wMRE', 'wDelta1', 'wDelta2', 'wDelta3']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
-                 experiment_dir=None, sets=['train', 'val'], use_load_checkpoint=None):
+                 experiment_dir=None, sets=['train', 'val'], mode='', use_load_checkpoint=None):
 
         # Call the constructor of the parent class (trainer)
         super().__init__(net, optimizer, lr_scheduler, objective, params, use_gpu=params['use_gpu'],
@@ -41,10 +40,11 @@ class KittiDepthTrainer(Trainer):
         self.save_chkpt_each = params['save_chkpt_each']
         self.sets = sets
         self.save_images = params['save_out_imgs']
-        self.load_rgb = params['load_rgb'] if 'load_rgb' in params else False 
+        self.input_rgb = params['load_rgb'] if 'load_rgb' in params else False
+        self.load_rgb = self.input_rgb or mode == 'display'
         
         
-        for s in self.sets: self.stats[s+'_loss'] = []
+        for s in self.sets: self.stats[s + '_loss'] = []
                 
    
 ####### Training Function #######
@@ -66,12 +66,12 @@ class KittiDepthTrainer(Trainer):
             elif self.use_load_checkpoint == -1:
                 print('=> Loading last checkpoint ...', end=' ')
                 if self.load_checkpoint():
-                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch-1))
+                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch - 1))
         # if self.epoch-1 == self.params['num_epochs']:
             # success = True
             # break
 
-        for epoch in range(self.epoch, self.params['num_epochs']+1): # range function returns max_epochs-1
+        for epoch in range(self.epoch, self.params['num_epochs'] + 1): # range function returns max_epochs-1
             self.epoch = epoch
 
             print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
@@ -83,7 +83,7 @@ class KittiDepthTrainer(Trainer):
             self.lr_scheduler.step() # LR decay
 
             # Add the average loss for this epoch to stats
-            for s in self.sets: self.stats[s+'_loss'].append(loss_meter[s].avg)
+            for s in self.sets: self.stats[s + '_loss'].append(loss_meter[s].avg)
 
             # Save checkpoint
             if self.use_save_checkpoint and (self.epoch) % self.save_chkpt_each == 0:
@@ -125,75 +125,106 @@ class KittiDepthTrainer(Trainer):
         self.net.train(False)
 
         device = torch.device('cuda:0' if self.use_gpu else 'cpu')
-
+        
+        fig,ax = plt.subplots(3, 2,)
+        plt.axis("off")
+        plt.tight_layout()
+        for a in fig.axes:
+            a.get_xaxis().set_visible(False)
+            a.get_yaxis().set_visible(False)
         with torch.no_grad():
             for s in self.sets:
                 # Iterate over data.
                 for data in self.dataloaders[s]:
-                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                    sparse_depth = sparse_depth.to(device)
-                    gt_depth = gt_depth.to(device)
-                    inputs_rgb = inputs_rgb.to(device)
-                    if self.load_rgb:
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
-                    else:
-                        outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
 
-                    img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0))*255)
-                                              .astype(np.uint8))
-                    img_rgb.show()
-                    img_rgb.save('rgb.png')
+                    if plt.fignum_exists(fig.number):
 
-                    sparse_depth = sparse_depth.squeeze().cpu().numpy()
-                    # sparse_depth[1:,:][sparse_depth[1:,:] == 0] = sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
-                    # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] = sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
-                    # sparse_depth[:,1:][sparse_depth[:,1:] == 0] = sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
-                    # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] = sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
-                    q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
-                    q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
-                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                        sparse_depth = sparse_depth.to(device)
+                        gt_depth = gt_depth.to(device)
+                        inputs_rgb = inputs_rgb.to(device)
+                        if self.input_rgb:
+                            outs = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
+                        else:
+                            outs = self.net(sparse_depth, (sparse_depth > 0).float())                        
+                        d = outs[0].squeeze().cpu().numpy()
+                        cd = outs[1].squeeze().cpu().numpy()
+                        if len(outs) > 2:
+                            s = outs[2].squeeze().cpu().numpy()
+                            cs = outs[3].squeeze().cpu().numpy()
+                        
 
-                    depth_img = cmap[
-                                np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                                :]  # depths
+                        img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0)) * 255)
+                                                  .astype(np.uint8))
+                        ax[0][1].imshow(img_rgb)
+                        #img_rgb.save('rgb.png')
 
-                    img_sparse_depth = Image.fromarray(depth_img)
-                    img_sparse_depth.show()
-                    img_sparse_depth.save('lidar img.png')
+                        sparse_depth = sparse_depth.squeeze().cpu().numpy()
+                        # sparse_depth[1:,:][sparse_depth[1:,:] == 0] =
+                        # sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
+                        # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] =
+                        # sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
+                        # sparse_depth[:,1:][sparse_depth[:,1:] == 0] =
+                        # sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
+                        # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] =
+                        # sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
+                        q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
+                        q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
+                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
 
-                    outputs = outputs.squeeze().cpu().numpy()
-                    q1_lidar = np.quantile(outputs[outputs > 0], 0.05)
-                    q2_lidar = np.quantile(outputs[outputs > 0], 0.95)
-                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                        depth_img = cmap[np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                    :]  # depths
 
-                    depth_img = cmap[
-                                np.ndarray.astype(np.interp(outputs, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                                :]  # depths
-                    img_pred_depth = Image.fromarray(depth_img)
-                    img_pred_depth.show()
-                    img_pred_depth.save('pred depth.png')
+                        img_sparse_depth = Image.fromarray(depth_img)
+                        ax[0][0].imshow(img_sparse_depth)
+                        img_sparse_depth.save('lidar img.png')
+
+                        q1_lidar = np.quantile(d[d > 0], 0.05)
+                        q2_lidar = np.quantile(d[d > 0], 0.95)
+                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                        depth_img = cmap[np.ndarray.astype(np.interp(d, (q1_lidar, q2_lidar), (0, 255)), np.int_), :]
+                        img_pred_depth = Image.fromarray(depth_img)
+                        ax[1][0].imshow(img_pred_depth)
 
 
-                    cout = cout.squeeze().cpu().numpy()
-                    cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                    cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                    
+                        c_img = cmap[np.ndarray.astype(np.interp(cd / np.max(cd), (0, 1), (0, 255)), np.int_), :] 
+                        img_pred_c = Image.fromarray(c_img)
+                        ax[1][1].imshow(img_pred_c)
+                        
+                        if len(outs) > 2:
+                            s_img = cmap[np.ndarray.astype(np.interp(s, (0, 1), (0, 255)), np.int_), :]
+                            img_pred_s = Image.fromarray(s_img)
+                            ax[2][0].imshow(img_pred_s)
 
-                    c_img = cmap[
-                                np.ndarray.astype(np.interp(outputs, (0, 1), (0, 255)), np.int_),
-                                :]  # depths
-                    img_pred_depth = Image.fromarray(c_img)
-                    img_pred_depth.show()
-                    img_pred_depth.save('pred certainty.png')
-                    bla = 0
+                            cs_img = cmap[np.ndarray.astype(np.interp(cs / np.max(cs), (0, 1), (0, 255)), np.int_),:]
+                            img_pred_cs = Image.fromarray(cs_img)
+                            ax[2][1].imshow(img_pred_cs)
+
+                        k = plt.waitforbuttonpress()
+                        if k == ord('w'):
+                            img_pred_depth.save('pred depth.png')
+                            img_pred_c.save('pred certainty.png')                        
+                            if len(outs) > 2:
+                                img_pred_s.save('pred smoothness.png')
+                                img_pred_cs.save('pred smoothness certainty.png')
+                        elif k == ord('q'):
+                            fig.close()
+                            return
+
 
 
     def return_one_prediction(self, inputs_d, inputs_rgb, original_width=None, original_height=None):
         # define the certainty
 
 
-        #assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) == 1216
+        #assert np.size(inputs_rgb, 0) == 352 and np.size(inputs_rgb, 1) ==
+        #1216
 
         inputs_d = np.array(inputs_d, dtype=np.float16)
         inputs_rgb = np.array(inputs_rgb, dtype=np.float16)
@@ -234,7 +265,7 @@ class KittiDepthTrainer(Trainer):
             inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
 
 
-        device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
 
         inputs_d = inputs_d.to(device)
         inputs_c = inputs_c.to(device)
@@ -245,10 +276,10 @@ class KittiDepthTrainer(Trainer):
 
         with torch.no_grad():
 
-            if self.load_rgb:
-                outputs_d, outputs_c = self.net(inputs_d, inputs_c, inputs_rgb)
+            if self.input_rgb:
+                outputs_d, outputs_c = self.net(inputs_d, inputs_c, inputs_rgb)[:2]
             else:
-                outputs_d, outputs_c = self.net(inputs_d, inputs_c)
+                outputs_d, outputs_c = self.net(inputs_d, inputs_c)[:2]
 
             # Convert sparse_depth to depth in meters before error metrics
             # outputs_d[outputs_d==0] = -1
@@ -258,10 +289,8 @@ class KittiDepthTrainer(Trainer):
                 outputs_d = 1 / outputs_d
                 outputs_d[div0] = np.max(outputs_d[not div0])
             if original_width is not None and original_height is not None:
-                outputs_d = torch.nn.functional.interpolate(
-                    outputs_d, (original_height, original_width), mode="bilinear", align_corners=False)
-                outputs_c = torch.nn.functional.interpolate(
-                    outputs_c, (original_height, original_width), mode="bilinear", align_corners=False)
+                outputs_d = torch.nn.functional.interpolate(outputs_d, (original_height, original_width), mode="bilinear", align_corners=False)
+                outputs_c = torch.nn.functional.interpolate(outputs_c, (original_height, original_width), mode="bilinear", align_corners=False)
             outputs_d[outputs_d < 0] = 0
             outputs_d *= self.params['data_normalize_factor'] / 256
 
@@ -269,9 +298,9 @@ class KittiDepthTrainer(Trainer):
 
 
     def train_epoch(self):
-        device = torch.device("cuda:"+str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
 
-        skipped=0
+        skipped = 0
         loss_meter = {}
         for s in self.sets: loss_meter[s] = AverageMeter()
           
@@ -279,21 +308,20 @@ class KittiDepthTrainer(Trainer):
             # Iterate over data.
             i = 0
             for data in self.dataloaders[s]:
-                if self.load_rgb:
-                    sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                    sparse_depth = sparse_depth.to(device)
-                    gt_depth = gt_depth.to(device)
-                    inputs_rgb = inputs_rgb.to(device)
-                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float(),
-                                                                    inputs_rgb)
+
+                sparse_depth = data[0].to(device)
+                gt_depth = data[1].to(device)
+                item_idxs = data[2]
+                if self.input_rgb:
+                    inputs_rgb = data[3].to(device)
+                    t = time.time()
+                    d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
                 else:
-                    sparse_depth, gt_depth, item_idxs = data
-                    sparse_depth = sparse_depth.to(device)
-                    gt_depth = gt_depth.to(device)
-                    predicted_depth, predicted_certainty = self.net(sparse_depth, (sparse_depth > 0).float())
+                    t = time.time()
+                    d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
 
                 # Calculate loss for valid pixel in the ground truth
-                loss = self.objective(predicted_depth, gt_depth, predicted_certainty, self.epoch)
+                loss = self.objective(d, gt_depth, cd, self.epoch)
 
                 # backward + optimize only if in training phase
                 if s == 'train':
@@ -305,7 +333,7 @@ class KittiDepthTrainer(Trainer):
                 # statistics
                 loss_meter[s].update(loss.item(), sparse_depth.size(0))
                 i += 1
-                print('trained batch %d of %d on %s set - loss = ' % (i, len(self.dataloaders[s]), s, loss.item()))
+                print('trained batch %d of %d on %s set - loss = %.4f\t%s|' % (i, len(self.dataloaders[s]), s, loss.item(), ' ' * int(50 * loss.item())))
 
             print('[{}] Loss: {:.8f} Skipped{:.0f}'.format(s,  loss_meter[s].avg, skipped), end=' ')
 
@@ -361,11 +389,11 @@ class KittiDepthTrainer(Trainer):
                         text_lines = text_file.read()
                         text_lines = text_lines.splitlines()[2:]
                         skip = True
-                        if len(text_lines)-1 != len(err_metrics):
+                        if len(text_lines) - 1 != len(err_metrics):
                             skip = False
                         else:
                             for i in range(len(err_metrics)):
-                                if text_lines[i+1].split('[')[1].split(']')[0] != err_metrics[i]:
+                                if text_lines[i + 1].split('[')[1].split(']')[0] != err_metrics[i]:
                                     skip = False
                         if skip:
                             print('Evaluation for %s set already done\n' % s)
@@ -376,95 +404,100 @@ class KittiDepthTrainer(Trainer):
                 # Iterate over data.
                 for data in self.dataloaders[s]:
                     print('eval batch %d of %d' % (i, len(self.dataloaders[s])))
-                    try:
-                        if self.load_rgb:
-                            sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                            sparse_depth = sparse_depth.to(device)
-                            gt_depth = gt_depth.to(device)
-                            inputs_rgb = inputs_rgb.to(device)
-                            t = time.time()
-                            outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
-                            elapsed = time.time() - t
-                        else:
-                            sparse_depth, gt_depth, item_idxs = data
-                            sparse_depth = sparse_depth.to(device)
-                            gt_depth = gt_depth.to(device)
-                            t = time.time()
-                            outputs, cout = self.net(sparse_depth, (sparse_depth > 0).float())
-                            elapsed = time.time() - t
 
-                        # Calculate loss for valid pixel in the ground truth
-                        loss = self.objective(outputs, gt_depth, cout, self.epoch)
+                    sparse_depth = data[0].to(device)
+                    gt_depth = data[1].to(device)
+                    item_idxs = data[2]
+                    if self.input_rgb:
+                        inputs_rgb = data[3].to(device)
+                        t = time.time()
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
+                    else:
+                        t = time.time()
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                    elapsed = time.time() - t
 
-                        # statistics
-                        loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                    # Calculate loss for valid pixel in the ground truth
+                    loss = self.objective(d, gt_depth, cd, self.epoch)
 
-                        # Convert to depth in meters before error metrics
-                        outputs[outputs == 0] = -1
-                        # if not self.load_rgb:
-                        #     outputs[outputs==outputs[0,0,0,0]] = -1
-                        gt_depth[gt_depth == 0] = -1
-                        if self.params['invert_depth']:
-                            outputs = 1 / outputs
-                            gt_depth = 1 / gt_depth
-                        outputs[outputs < 0] = 0
-                        gt_depth[gt_depth < 0] = 0
-                        outputs *= self.params['data_normalize_factor'] / 256
-                        gt_depth *= self.params['data_normalize_factor'] / 256
+                    # statistics
+                    loss_meter[s].update(loss.item(), sparse_depth.size(0))
 
-                        # Calculate error metrics
-                        if any("Delta" in s for s in err_metrics):
-                            fn = globals()['Deltas']()
-                            error = fn(outputs, gt_depth)
-                            err['Delta1'].update(error[0], sparse_depth.size(0))
-                            err['Delta2'].update(error[1], sparse_depth.size(0))
-                            err['Delta3'].update(error[2], sparse_depth.size(0))
-                        if 'BatchDuration'in err_metrics:
-                            err['BatchDuration'].update(elapsed)
-                        if 'Duration'in err_metrics:
-                            err['Duration'].update(elapsed/sparse_depth.size(0), sparse_depth.size(0))
-                        if 'MAE'in err_metrics:
-                            fn = globals()['MAE']()
-                            error = fn(outputs, gt_depth)
-                            err['MAE'].update(error.item(), sparse_depth.size(0))
-                        if 'RMSE'in err_metrics:
-                            fn = globals()['RMSE']()
-                            error = fn(outputs, gt_depth)
-                            err['RMSE'].update(error.item(), sparse_depth.size(0))
-                        if 'MRE'in err_metrics:
-                            fn = globals()['MRE']()
-                            error = fn(outputs, gt_depth)
-                            err['MRE'].update(error.item(), sparse_depth.size(0))
+                    # Convert to depth in meters before error metrics
+                    d[d == 0] = -1
+                    gt_depth[gt_depth == 0] = -1
+                    if self.params['invert_depth']:
+                        d = 1 / d
+                        gt_depth = 1 / gt_depth
+                    d[d < 0] = 0
+                    gt_depth[gt_depth < 0] = 0
+                    d *= self.params['data_normalize_factor'] / 256
+                    gt_depth *= self.params['data_normalize_factor'] / 256
 
-                        # Save output images (optional)
-                        if self.save_images and s in ['selval', 'test']:
-                            outputs = outputs.data
+                    # Calculate error metrics
+                    if "Delta1" in err_metrics:
+                        fn = globals()['Deltas']()
+                        error = fn(d, gt_depth)
+                        err['Delta1'].update(error[0], sparse_depth.size(0))
+                        err['Delta2'].update(error[1], sparse_depth.size(0))
+                        err['Delta3'].update(error[2], sparse_depth.size(0))
+                    if "wDelta1" in err_metrics:
+                        fn = globals()['wDeltas']()
+                        error = fn(d, cd, gt_depth)
+                        err['wDelta1'].update(error[0], sparse_depth.size(0))
+                        err['wDelta2'].update(error[1], sparse_depth.size(0))
+                        err['wDelta3'].update(error[2], sparse_depth.size(0))
+                    if 'BatchDuration' in err_metrics:
+                        err['BatchDuration'].update(elapsed)
+                    if 'Duration' in err_metrics:
+                        err['Duration'].update(elapsed / sparse_depth.size(0), sparse_depth.size(0))
+                    if 'MAE' in err_metrics:
+                        fn = globals()['MAE']()
+                        error = fn(d, gt_depth)
+                        err['MAE'].update(error.item(), sparse_depth.size(0))
+                    if 'wMAE' in err_metrics:
+                        fn = globals()['wMAE']()
+                        error = fn(d, cd, gt_depth)
+                        err['wMAE'].update(error.item(), sparse_depth.size(0))
+                    if 'RMSE' in err_metrics:
+                        fn = globals()['RMSE']()
+                        error = fn(d, gt_depth)
+                        err['RMSE'].update(error.item(), sparse_depth.size(0))
+                    if 'wRMSE' in err_metrics:
+                        fn = globals()['wRMSE']()
+                        error = fn(d, cd, gt_depth)
+                        err['wRMSE'].update(error.item(), sparse_depth.size(0))
+                    if 'MRE' in err_metrics:
+                        fn = globals()['MRE']()
+                        error = fn(d, gt_depth)
+                        err['MRE'].update(error.item(), sparse_depth.size(0))
+                    if 'wMRE' in err_metrics:
+                        fn = globals()['wMRE']()
+                        error = fn(d, cd, gt_depth)
+                        err['wMRE'].update(error.item(), sparse_depth.size(0))
 
-                            outputs *= 256
+                    # Save output images (optional)
+                    if self.save_images and s in ['selval', 'test']:
+                        d = d.data
 
-                            saveTensorToImages(outputs, item_idxs, os.path.join(self.experiment_dir,
-                                                                                s + '_output_' + 'epoch_' + str(
-                                                                                    self.epoch - 1)))
-                            saveTensorToImages(cout * 255, item_idxs, os.path.join(self.experiment_dir,
-                                                                                   s + '_cert_' + 'epoch_' + str(
-                                                                                       self.epoch - 1)))
+                        d *= 256
 
-                        i += 1
-                        err['Skipped'] .update(0, 1)
-                    except:
-                        err['Skipped'] .update(1, 1)
+                        saveTensorToImages(d, item_idxs, os.path.join(self.experiment_dir,
+                                                                            s + '_output_' + 'epoch_' + str(self.epoch - 1)))
+                        saveTensorToImages(cd * 255, item_idxs, os.path.join(self.experiment_dir,
+                                                                                s + '_cert_' + 'epoch_' + str(self.epoch - 1)))
+
+                    i += 1
 
                 print('Evaluation results on [{}]:\n============================='.format(s))
-                print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
-                for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
+                print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg).replace('.',','))
+                for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg).replace('.',','))
 
                 # Save evaluation metric to text file
                 with open(os.path.join(self.experiment_dir, fname), 'w') as text_file:
-                    text_file.write(
-                        'Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(
-                            s, str(self.epoch - 1)))
-                    text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
-                    for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
+                    text_file.write('Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(s, str(self.epoch - 1)))
+                    text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg).replace('.',','))
+                    for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg).replace('.',','))
 
 
 ####### Generation Function #######
@@ -489,7 +522,7 @@ class KittiDepthTrainer(Trainer):
             frames = np.zeros_like(random_mapping, np.object)
 
             with open(os.path.join(set_dir, 'devkit_object', 'mapping', 'train_mapping.txt'), 'r') as f:
-                i=0
+                i = 0
                 for line in f.readlines():
                     line = line.rstrip()
                     if len(line) == 0:
@@ -497,9 +530,9 @@ class KittiDepthTrainer(Trainer):
                     days[i], drives[i], frames[i] = line.split(' ')
                     i += 1
 
-            drives = drives[random_mapping-1]
-            days = days[random_mapping-1]
-            frames = frames[random_mapping-1]
+            drives = drives[random_mapping - 1]
+            days = days[random_mapping - 1]
+            frames = frames[random_mapping - 1]
 
             resize = False
 
@@ -545,35 +578,45 @@ class KittiDepthTrainer(Trainer):
                 if resize:
                     rgb = rgb.resize((desired_image_width, desired_image_height), Image.LANCZOS)
                     rgb = np.array(rgb, dtype=np.float16)
-                    computed_sparse_depth = generate_depth_map(days[i], drives[i], frames[i], 2,
+                    computed_sparse_depth = generate_depth_map(kitti_raw_dir, days[i], drives[i], frames[i], 2,
                                                                desired_image_width, desired_image_height,
                                                                lidar_padding=self.params['lidar_padding'])
                     completed_depth, completed_certainty = self.return_one_prediction(computed_sparse_depth, rgb,
                                                                                       img_width, img_height)
                 else:
-                    computed_sparse_depth = generate_depth_map(days[i], drives[i], frames[i], 2,
+                    computed_sparse_depth = generate_depth_map(kitti_raw_dir, days[i], drives[i], frames[i], 2,
                                                                lidar_padding=self.params['lidar_padding'])
                     completed_depth, completed_certainty = self.return_one_prediction(computed_sparse_depth, rgb)
 
                 # import matplotlib.pyplot as plt
                 # cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                # cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                # cmap = np.ndarray.astype(np.array([cmap(i) for i in
+                # range(256)])[:, :3] * 255, np.uint8)
                 #
-                # q1_lidar = np.quantile(computed_sparse_depth[computed_sparse_depth > 0], 0.05)
-                # q2_lidar = np.quantile(computed_sparse_depth[computed_sparse_depth > 0], 0.95)
-                # print('computed lidar quantiles: %5.2f  -  %5.2f' % (q1_lidar, q2_lidar))
+                # q1_lidar =
+                # np.quantile(computed_sparse_depth[computed_sparse_depth > 0],
+                # 0.05)
+                # q2_lidar =
+                # np.quantile(computed_sparse_depth[computed_sparse_depth > 0],
+                # 0.95)
+                # print('computed lidar quantiles: %5.2f - %5.2f' % (q1_lidar,
+                # q2_lidar))
                 # depth_img = cmap[
-                #             np.ndarray.astype(np.interp(computed_sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                #             :]  # depths
+                #             np.ndarray.astype(np.interp(computed_sparse_depth,
+                #             (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                #             :] # depths
                 # fig = Image.fromarray(depth_img)
                 # fig.save('computed_lidar_img', 'png')
                 # fig.show('computed_lidar_img')
                 #
-                # q1_lidar = np.quantile(completed_depth[completed_depth > 0], 0.05)
-                # q2_lidar = np.quantile(completed_depth[completed_depth > 0], 0.95)
+                # q1_lidar = np.quantile(completed_depth[completed_depth > 0],
+                # 0.05)
+                # q2_lidar = np.quantile(completed_depth[completed_depth > 0],
+                # 0.95)
                 # depth_img = cmap[
-                #             np.ndarray.astype(np.interp(completed_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                #             :]  # depths
+                #             np.ndarray.astype(np.interp(completed_depth,
+                #             (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                #             :] # depths
                 # fig = Image.fromarray(depth_img)
                 # fig.save('depth_img_computed', 'png')
                 # fig.show('depth_img_computed')

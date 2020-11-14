@@ -6,7 +6,6 @@ __version__ = "0.1"
 __maintainer__ = "Abdelrahman Eldesokey"
 __email__ = "abdo.eldesokey@gmail.com"
 ########################################
-
 import torch
 import torch.nn.functional as F
 
@@ -38,7 +37,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
 
 
         # Define Parameters
-        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(2, 1, 1, 1))
+        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
         if self.channel_first:
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels,
@@ -78,7 +77,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             EnforcePos.apply(self, 'channel_weight', pos_fn)
             EnforcePos.apply(self, 'spatial_weight', pos_fn)
             EnforcePos.apply(self, 'w_prop', pos_fn)
-            EnforcePos.apply(self, 'w_s_from_d', 'test')
+            EnforcePos.apply(self, 'w_s_from_d', 'sigmoid')
 
 
 
@@ -92,9 +91,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
 
         min_div_max = torch.abs(retrieve_indices(d, j_min) / (retrieve_indices(d, j_max) + self.eps))
 
-        s_from_d = (1 - self.w_s_from_d[0, ...] - self.w_s_from_d[1, ...]) * min_div_max \
-            + self.w_s_from_d[0, ...] * min_div_max**2 \
-            + self.w_s_from_d[1, ...] * min_div_max**3
+        s_from_d = (1 - self.w_s_from_d) * min_div_max + self.w_s_from_d * min_div_max ** 2
         cs_from_d = retrieve_indices(cd, j_max) * retrieve_indices(cd, j_min)
 
         if self.stride == 1:
@@ -108,30 +105,30 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cs_prop * s_prop, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cs_prop, self.channel_weight, groups=self.groups)
-            s_channel = nom / (denom+self.eps)
-            cs_channel = denom / (torch.sum(self.channel_weight)+self.eps)
+            s_channel = nom / (denom + self.eps)
+            cs_channel = denom / (torch.sum(self.channel_weight) + self.eps)
 
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cs_channel * s_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
             denom = F.conv2d(cs_channel, self.spatial_weight, groups=self.out_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
-            s = nom / (denom+self.eps)
-            cs = denom / (torch.sum(self.spatial_weight)+self.eps)
+            s = nom / (denom + self.eps)
+            cs = denom / (torch.sum(self.spatial_weight) + self.eps)
         else:
             # Normalized Convolution along spatial dimensions
             nom = F.conv2d(cs_prop * s_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                            padding=self.padding, dilation=self.dilation).squeeze(2)
             denom = F.conv2d(cs_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                              padding=self.padding, dilation=self.dilation).squeeze(2)
-            s_spatial = nom / (denom+self.eps)
-            cs_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
+            s_spatial = nom / (denom + self.eps)
+            cs_spatial = denom / (torch.sum(self.spatial_weight) + self.eps)
 
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cs_spatial * s_spatial, self.channel_weight, groups=self.groups)
             denom = F.conv2d(cs_spatial, self.channel_weight, groups=self.groups)
-            s = nom / (denom+self.eps)
-            cs = denom / (torch.sum(self.channel_weight)+self.eps)
+            s = nom / (denom + self.eps)
+            cs = denom / (torch.sum(self.channel_weight) + self.eps)
 
         if self.stride > 1:
             s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)
@@ -139,6 +136,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
 
         if self.use_bias:
             s += self.bias
+            s = torch.sigmoid(s * 2 - 1) / 2 + 0.5
 
         if self.devalue_pooled_confidence:
             return s, cs / self.stride / self.stride

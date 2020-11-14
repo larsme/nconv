@@ -12,14 +12,14 @@ from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 from dataloader.KittiDepthDataset import KittiDepthDataset
 
-def KittiDepthDataloader(params, sets):
+def KittiDepthDataloader(params, sets, mode):
     
     # Input images are 16-bit, but only 15-bits are utilized, so we normalized the sparse_depth to [0:1] using a normalization factor
     norm_factor = params['data_normalize_factor']
     invert_depth = params['invert_depth']
     kitti_depth_dir = params['kitti_depth_dataset_dir']
     kitti_rgb_dir = params['kitti_rgb_dataset_dir'] if 'kitti_rgb_dataset_dir' in params else None
-    load_rgb = params['load_rgb'] if 'load_rgb' in params else False 
+    load_rgb = params['load_rgb'] if 'load_rgb' in params else mode == 'display' 
     rgb2gray = params['rgb2gray'] if 'rgb2gray' in params else False
     lidar_padding = params['lidar_padding']
           
@@ -42,7 +42,7 @@ def KittiDepthDataloader(params, sets):
             image_datasets['train'].sparse_depth_paths = image_datasets['train'].sparse_depth_paths[0:params['train_on']]
             image_datasets['train'].gt_depth_paths = image_datasets['train'].gt_depth_paths[0:params['train_on']]
 
-        dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
+        dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size= 1 if mode =='display' else params['train_batch_sz'],
                                           num_workers=0)
         dataset_sizes['train'] = {len(image_datasets['train'])}
     
@@ -57,7 +57,7 @@ def KittiDepthDataloader(params, sets):
                                                   load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray,
                                                   resize=True, center_crop=False, lidar_padding=lidar_padding,
                                                   desired_image_width=1216, desired_image_height=352)
-        dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
+        dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=mode =='display', batch_size= 1 if mode =='display' else params['val_batch_sz'],
                                         num_workers=0)
         dataset_sizes['val'] = {len(image_datasets['val'])}
 
@@ -71,7 +71,7 @@ def KittiDepthDataloader(params, sets):
                                                      load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray,
                                                      resize=False, center_crop=False, lidar_padding=lidar_padding)
 
-        dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'],
+        dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=mode =='display', batch_size= 1 if mode =='display' else params['test_batch_sz'],
                                            num_workers=0)
         dataset_sizes['selval'] = {len(image_datasets['selval'])}
 
@@ -86,7 +86,7 @@ def KittiDepthDataloader(params, sets):
                                                    load_rgb=load_rgb, rgb_dir=kitti_rgb_dir, rgb2gray=rgb2gray,
                                                    resize=False, center_crop=False, lidar_padding=lidar_padding)
 
-        dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'],
+        dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=1  if mode =='display' else params['test_batch_sz'],
                                          num_workers=0)
         dataset_sizes['test'] = {len(image_datasets['test'])}
 

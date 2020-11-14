@@ -242,4 +242,5 @@ class CNN(torch.nn.Module):
 
         # output
         d, cd = self.nconv7_d(d_0, cd_0)
-        return d, cd
+        s, cs = self.nconv7_d(s_0, cs_0)
+        return d, cd, s, cs

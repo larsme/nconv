@@ -125,10 +125,6 @@ class EnforcePos(object):
             return F.softplus(p, beta=10)
         elif pos_fn == 'sigmoid':
             return torch.sigmoid(p)
-        elif pos_fn == 'test':
-            p = torch.sigmoid(p)
-            h = p.sum().abs()
-            return p / torch.max(torch.ones_like(h), h)
         else:
             print('Undefined positive function!')
             return 

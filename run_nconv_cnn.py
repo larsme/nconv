@@ -22,7 +22,7 @@ from torch.optim import lr_scheduler
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 from dataloader.KittiDepthDataloader import KittiDepthDataloader
 from dataloader.OwnDepthDataloader import OwnDepthDataloader
-from modules.losses import ConfLossDecay, SmoothL1Loss, MSELoss
+from modules.losses import ConfLossDecay, SmoothL1Loss, MSELoss, RMSELoss
 
 # Fix CUDNN error for non-contiguous inputs
 import torch.backends.cudnn as cudnn
@@ -95,7 +95,7 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
 
     if 'kitti_rgb_dataset_dir' in params:
         # Dataloader for KittiDepth
-        dataloaders, dataset_sizes = KittiDepthDataloader(params, sets)
+        dataloaders, dataset_sizes = KittiDepthDataloader(params, sets, mode)
     else:
         # Dataloader for Own Depth
         dataloaders, dataset_sizes = OwnDepthDataloader(params, sets)
@@ -129,13 +129,13 @@ def load_net(mode='eval', sets=None, checkpoint_num=-1,
                                                         weight_decay=params['weight_decay'])
 
 
-        # Decay LR by a factor of 0.1 every exp_dir7 epochs
+        # Decay LR by a factor of lr_decay every lr_decay_step' epochs
         lr_decay = lr_scheduler.StepLR(optimizer, step_size=params['lr_decay_step'], gamma=params['lr_decay'])
 
 
         mytrainer = t.KittiDepthTrainer(model, params, optimizer, objective, lr_decay, dataloaders, dataset_sizes,
                                         experiment_dir=exp_dir,
-                                        sets=sets, use_load_checkpoint=checkpoint_num)
+                                        sets=sets, mode=mode, use_load_checkpoint=checkpoint_num)
 
     return mytrainer
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
             # train the network
             load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
                      exp_subdir=args.exp_subdir,
-                     mode=args.mode, sets=['display'], checkpoint_num=args.checkpoint_num)\
+                     mode='display', sets=['val'], checkpoint_num=args.checkpoint_num)\
                 .display()
         elif args.mode == 'count_parameters':
             count_parameters(training_ws_path=args.ws_path, network_file=args.network_file,
