@@ -20,14 +20,11 @@ class StructNMaxPool2D_d_with_s(torch.nn.Module):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
-
-        self.devalue_pooled_confidence = devalue_pooled_confidence
+        
+        self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
 
     def forward(self, d, cd, s, cs, *args):
         _, inds = F.max_pool2d(cd*s, kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
 
-        if self.devalue_pooled_confidence:
-            return retrieve_indices(d, inds), retrieve_indices(cd, inds) / self.stride / self.stride
-        else:
-            return retrieve_indices(d, inds), retrieve_indices(cd, inds)
+        return retrieve_indices(d, inds), retrieve_indices(cd, inds) * self.devalue_conf
