@@ -9,7 +9,6 @@ __email__ = "abdo.eldesokey@gmail.com"
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 import torch
-from torchvision import transforms
 import numpy as np
 import glob
 
@@ -17,23 +16,19 @@ import glob
 class KittiDepthDataset(Dataset):
 
     def __init__(self, kitti_depth_path, setname='train', norm_factor=256, invert_depth=False,
-                 load_rgb=False, rgb_dir=None, rgb2gray=False,
-                 resize=True, center_crop=False, desired_image_width=1216, desired_image_height=352, lidar_padding=0):
+                 load_rgb=False, rgb_dir=None, 
+                 resize=True, desired_image_width=1216, desired_image_height=352, lidar_padding=0, crop_top=0):
         self.kitti_depth_path = kitti_depth_path
         self.setname = setname
-        if center_crop:
-            self.transform = transforms.Compose([transforms.CenterCrop((desired_image_height, desired_image_width))])
-        else:
-            self.transform = None
         self.norm_factor = norm_factor
         self.invert_depth = invert_depth
         self.load_rgb = load_rgb
         self.rgb_dir = rgb_dir
-        self.rgb2gray = rgb2gray
         self.resize = resize
         self.desired_image_width = desired_image_width
         self.desired_image_height = desired_image_height
         self.lidar_padding = lidar_padding
+        self.crop_top = crop_top
 
         if setname == 'train' or setname == 'val':
             self.sparse_depth_paths = list(sorted(glob.iglob(self.kitti_depth_path + "/*/*/velodyne_raw/*/*.png",
@@ -84,7 +79,9 @@ class KittiDepthDataset(Dataset):
             img_source_dir = s[4]
             img_idx_dir = s[5].split('.png')[0]
             cam = img_source_dir.split('0')[1]
-            computed_depth = generate_depth_map(self.rgb_dir, day_dir, drive_dir, img_idx_dir, cam,
+            
+            if self.lidar_padding != 0:
+               sparse_depth = generate_depth_map(self.rgb_dir, day_dir, drive_dir, img_idx_dir, cam,
                                                 self.desired_image_width, self.desired_image_height,
                                                 resize=self.resize, lidar_padding=self.lidar_padding)
 
@@ -121,47 +118,41 @@ class KittiDepthDataset(Dataset):
                 rgb_path = sparse_depth_path[:idx] + 'image' + fname[idx2 + 4:]
             rgb = Image.open(rgb_path)
 
-            if self.rgb2gray:
-                t = transforms.Grayscale(1)
-                rgb = t(rgb)
-
         # Read images and convert them to 4D floats
-        sparse_depth = Image.open(str(self.sparse_depth_paths[item]))
+        if self.lidar_padding == 0:
+            sparse_depth = Image.open(str(self.sparse_depth_paths[item]))
         gt_depth = Image.open(str(self.gt_depth_paths[item]))
 
-        # Apply transformations if given
         if self.resize:
-            sparse_depth = sparse_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
+            if self.lidar_padding == 0:
+                sparse_depth = sparse_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
             gt_depth = gt_depth.resize((self.desired_image_width, self.desired_image_height), Image.NEAREST)
-        else:
-            sparse_depth = self.transform(sparse_depth)
-            gt_depth = self.transform(gt_depth)
 
-        if self.load_rgb:
-            if self.resize:
+            if self.load_rgb:
                 rgb = rgb.resize((self.desired_image_width, self.desired_image_height), Image.LANCZOS)
-            else:
-                rgb = self.transform(rgb)
+
+        if self.crop_top >0:
+            rect = (0, self.crop_top, gt_depth.size[0], gt_depth.size[1])
+            if self.lidar_padding == 0:
+                sparse_depth=sparse_depth.crop(rect)
+            gt_depth=gt_depth.crop(rect)
+            if self.load_rgb:
+                rgb=rgb.crop(rect)
 
         # Convert to numpy
         sparse_depth = np.array(sparse_depth, dtype=np.float16)
         gt_depth = np.array(gt_depth, dtype=np.float16)
-        if not (self.setname == 'train' or self.setname == 'val'):
-            computed_depth = sparse_depth
 
         # Normalize the depth
         sparse_depth = sparse_depth / self.norm_factor  #[0,1]
-        computed_depth = computed_depth / self.norm_factor  #[0,1]
         gt_depth = gt_depth / self.norm_factor
 
         # Expand dims into Pytorch format
         sparse_depth = np.expand_dims(sparse_depth, 0)
-        computed_depth = np.expand_dims(computed_depth, 0)
         gt_depth = np.expand_dims(gt_depth, 0)
 
         # Convert to Pytorch Tensors
         sparse_depth = torch.tensor(sparse_depth, dtype=torch.float)
-        computed_depth = torch.tensor(computed_depth, dtype=torch.float)
         gt_depth = torch.tensor(gt_depth, dtype=torch.float)
 
         # Convert depth to disparity
@@ -170,28 +161,20 @@ class KittiDepthDataset(Dataset):
             sparse_depth = 1 / sparse_depth
             sparse_depth[sparse_depth < 0] = 0
 
-            computed_depth[computed_depth == 0] = -1
-            computed_depth = 1 / computed_depth
-            computed_depth[computed_depth < 0] = 0
-
             gt_depth[gt_depth == 0] = -1
             gt_depth = 1 / gt_depth
             gt_depth[gt_depth < 0] = 0
 
-        input_depth = sparse_depth if self.lidar_padding == 0 else computed_depth
 
         # Convert RGB image to tensor
         if self.load_rgb:
             rgb = np.array(rgb, dtype=np.float16)
             rgb /= 255
-            if self.rgb2gray:
-                rgb = np.expand_dims(rgb, 0)
-            else:
-                rgb = np.transpose(rgb, (2, 0, 1))
+            rgb = np.transpose(rgb, (2, 0, 1))
             rgb = torch.tensor(rgb, dtype=torch.float)
-            return input_depth, gt_depth, item, rgb
+            return sparse_depth, gt_depth, item, rgb
         else:
-            return input_depth, gt_depth, item
+            return sparse_depth, gt_depth, item
 
 
 def load_velodyne_points(filename):
@@ -224,7 +207,7 @@ def read_calib_file(filepath):
     return data
 
 
-def generate_depth_map(kitti_raw_dir, day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0,
+def generate_depth_map(kitti_raw_dir, day, drive, frame, cam, desired_image_width=None, desired_image_height=None, lidar_padding=0, crop_top=0,
                        resize=True, vel_depth=False):
     """Generate a depth map from velodyne data
     Originally from monodepth2
@@ -270,13 +253,9 @@ def generate_depth_map(kitti_raw_dir, day, drive, frame, cam, desired_image_widt
     if resize:
         velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0] * desired_image_width / im_shape[1])
         velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1] * desired_image_height / im_shape[0])
-    else:
-        # center crop
-        velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0] + (desired_image_width - im_shape[1]) / 2)
-        velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1] + (desired_image_height - im_shape[0]) / 2)
 
     val_inds = (velo_pts_im[:, 0] >= -lidar_padding) \
-               & (velo_pts_im[:, 1] >= -lidar_padding) \
+               & (velo_pts_im[:, 1] >= -lidar_padding + self.crop_top) \
                & (velo_pts_im[:, 0] < desired_image_width+lidar_padding) \
                & (velo_pts_im[:, 1] < desired_image_height+lidar_padding) \
                & (velo_pts_im[:, 2] > 0)  # positive depth
@@ -286,7 +265,7 @@ def generate_depth_map(kitti_raw_dir, day, drive, frame, cam, desired_image_widt
     sparse_depth_map = np.zeros((desired_image_height+2*lidar_padding, desired_image_width+2*lidar_padding), np.float)
     for i in range(velo_pts_im.shape[0]):
         px = int(velo_pts_im[i, 0]) + lidar_padding
-        py = int(velo_pts_im[i, 1]) + lidar_padding
+        py = int(velo_pts_im[i, 1]) + lidar_padding- self.crop_top
         depth = velo_pts_im[i, 2]
         if sparse_depth_map[py, px] == 0 or sparse_depth_map[py, px] > depth:
             # for conflicts, use closer point

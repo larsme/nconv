@@ -8,7 +8,6 @@ __email__ = "abdo.eldesokey@gmail.com"
 
 import os
 import torch
-from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 from dataloader.OwnDepthDataset import OwnDepthDataset
 import glob
@@ -23,7 +22,6 @@ def OwnDepthDataloader(params, sets):
     rgb_dir = params['rgb_dataset_dir'] if 'rgb_dataset_dir' in params else None
     assign_only_true_matches = params['assign_only_true_matches'] if 'assign_only_true_matches' in params else False
     load_rgb = params['load_rgb'] if 'load_rgb' in params else False 
-    rgb2gray = params['rgb2gray'] if 'rgb2gray' in params else False
     lidar_padding = params['lidar_padding']
 
 
@@ -122,7 +120,7 @@ def OwnDepthDataloader(params, sets):
         image_datasets['train'] = OwnDepthDataset(train_depth_paths, train_rgb_paths,
                                                   rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                                                   setname='train',
-                                                  load_rgb=load_rgb, rgb2gray=rgb2gray,
+                                                  load_rgb=load_rgb, 
                                                   lidar_padding=lidar_padding, image_width=2048, image_height=1536,
                                                   desired_image_width=2048, desired_image_height=1536,
                                                   do_flip=params['do_flip'], rotate_by=params['rotate_augmentation'], 
@@ -139,7 +137,7 @@ def OwnDepthDataloader(params, sets):
         image_datasets['val'] = OwnDepthDataset(val_depth_paths, val_rgb_paths,
                                                 rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                                                 setname='val',
-                                                load_rgb=load_rgb, rgb2gray=rgb2gray,
+                                                load_rgb=load_rgb, 
                                                 lidar_padding=lidar_padding, image_width=2048, image_height=1536,
                                                 desired_image_width=2048, desired_image_height=1536,
                                                 do_flip=False, rotate_by=0, input_to_gt_ratio=0.5)
@@ -151,7 +149,7 @@ def OwnDepthDataloader(params, sets):
         image_datasets['display'] = OwnDepthDataset(disp_depth_paths, disp_rgb_paths,
                                                  rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
                                                  setname='display',
-                                                 load_rgb=True, rgb2gray=rgb2gray,
+                                                 load_rgb=True, 
                                                  lidar_padding=lidar_padding, image_width=2048, image_height=1536,
                                                  desired_image_width=2048, desired_image_height=1536,
                                                  do_flip=False, rotate_by=0)

@@ -9,11 +9,9 @@ __email__ = "abdo.eldesokey@gmail.com"
 import torch
 import torch.nn.functional as F
 
-from modules.NConv2D import EnforcePos
-
 
 class StructNConv2D_d(torch.nn.Module):
-    def __init__(self, init_method='k', in_channels=1, out_channels=1, groups=1,
+    def __init__(self, init_method='k', mirror_weights=False, in_channels=1, out_channels=1, groups=1,
                  kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
         super(StructNConv2D_d, self).__init__()
 
@@ -29,26 +27,46 @@ class StructNConv2D_d(torch.nn.Module):
         self.padding = padding
         self.dilation = dilation
 
+        self.mirror_weights = mirror_weights
+
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
 
         # Define Parameters
-        self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+        if mirror_weights:
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+        else:
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
         self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
 
         # Init Parameters
-        if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.channel_weight)
-            torch.nn.init.xavier_uniform_(self.spatial_weight)
-        else:  # elif self.init_method == 'k': # Kaiming
+        if 'x' in self.init_method:  # Xavier
+            torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+        elif 'k' in self.init_method: # Kaiming
             torch.nn.init.kaiming_uniform_(self.channel_weight)
-            torch.nn.init.kaiming_uniform_(self.spatial_weight)
+            torch.nn.init.kaiming_uniform_(spatial_weight)
+        if 'n' in self.init_method:
+            spatial_weight.data[-1,:, self.kernel_size // 2, self.kernel_size // 2] = 3
+            if in_channels>1:
+                spatial_weight.data[-1,:,:,:] = 1
+        
+        if mirror_weights:
+            self.true_spatial_weight = spatial_weight
+        else:
+            self.spatial_weight = spatial_weight
             
-    def enforce_limits():
+    def enforce_limits(self):
         # Enforce positive weights
+        if self.mirror_weights:
+            self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
+        else:
+            self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
-        self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
 
     def forward(self, d, cd):
+        if self.mirror_weights:
+            self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+
         # Normalized Convolution along spatial dimensions
         nom = F.conv2d(cd * d, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                         padding=self.padding, dilation=self.dilation)

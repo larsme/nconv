@@ -18,7 +18,7 @@ import cv2
 class OwnDepthDataset(Dataset):
     def __init__(self, depth_paths, rgb_paths,
                  rvec, tvec, undistorted_intrinsics, undistorted_intrinsics_old,
-                 setname, load_rgb, rgb2gray,
+                 setname, load_rgb, 
                  lidar_padding=0, image_width=2048, image_height=1536,
                  desired_image_width=2048, desired_image_height=1536,
                  do_flip=False, rotate_by=0, input_to_gt_ratio=0.5):
@@ -30,7 +30,6 @@ class OwnDepthDataset(Dataset):
         self.undistorted_intrinsics = undistorted_intrinsics
         self.undistorted_intrinsics_old = undistorted_intrinsics_old
         self.load_rgb = load_rgb
-        self.rgb2gray = rgb2gray
         self.image_width = image_width
         self.image_height = image_height
         self.desired_image_width = desired_image_width
@@ -57,10 +56,7 @@ class OwnDepthDataset(Dataset):
             rgb = np.array(rgb, dtype=np.float16)
             # Convert RGB image to tensor
             rgb /= 255
-            if self.rgb2gray:
-                rgb = np.expand_dims(rgb, 0)
-            else:
-                rgb = np.transpose(rgb, (2, 0, 1))
+            rgb = np.transpose(rgb, (2, 0, 1))
             rgb = torch.Tensor(rgb)
             if self.do_flip:
                 input_depth_map = torch.flip(input_depth_map, [2])

@@ -180,12 +180,8 @@ if __name__ == "__main__":
         elif args.mode == 'traineval':
             load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
                      exp_subdir=args.exp_subdir,
-                     mode='train', sets=['train'], checkpoint_num=args.checkpoint_num)\
-                .train()
-            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
-                     exp_subdir=args.exp_subdir,
-                     mode='eval', sets=['val'], checkpoint_num=args.checkpoint_num)\
-                .evaluate()
+                     mode='traineval', sets=['train', 'val'], checkpoint_num=args.checkpoint_num)\
+                .train(trainsets=['train'], evalsets = ['val'])
         elif args.mode == 'gen':
             load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
                      exp_subdir=args.exp_subdir,

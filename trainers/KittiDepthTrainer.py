@@ -43,13 +43,19 @@ class KittiDepthTrainer(Trainer):
         self.input_rgb = params['load_rgb'] if 'load_rgb' in params else False
         self.load_rgb = self.input_rgb or mode == 'display'
         
+        if params['loss'] == 'RMSELoss':
+            self.disp_scale = 45
+        elif params['loss'] == "ConfLossDecay":
+            self.disp_scale = 2500
         
         for s in self.sets: self.stats[s + '_loss'] = []
                 
    
 ####### Training Function #######
 
-    def train(self):
+    def train(self, trainsets=['train'], evalsets=['val'], evaluate_all_epochs=False):
+
+
         print('#############################\n### Experiment Parameters ###\n#############################')
         for k, v in self.params.items(): print('{0:<22s} : {1:}'.format(k,v))
 
@@ -70,9 +76,16 @@ class KittiDepthTrainer(Trainer):
         # if self.epoch-1 == self.params['num_epochs']:
             # success = True
             # break
+            
+        self.sets = trainsets
 
         for epoch in range(self.epoch, self.params['num_epochs'] + 1): # range function returns max_epochs-1
             self.epoch = epoch
+
+            if evaluate_all_epochs:
+                self.sets = evalsets
+                self.evaluate()
+                self.sets = trainsets
 
             print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))
 
@@ -99,6 +112,8 @@ class KittiDepthTrainer(Trainer):
             #     continue
 
         print("Training Finished.\n")
+        self.sets = evalsets
+        self.evaluate()
             
         return self.net
 
@@ -126,97 +141,99 @@ class KittiDepthTrainer(Trainer):
 
         device = torch.device('cuda:0' if self.use_gpu else 'cpu')
         
-        fig,ax = plt.subplots(3, 2,)
+        fig,ax = plt.subplots(1 + len(self.net.outs)//2, 2,)
         plt.axis("off")
         plt.tight_layout()
         for a in fig.axes:
             a.get_xaxis().set_visible(False)
             a.get_yaxis().set_visible(False)
-        with torch.no_grad():
-            for s in self.sets:
-                # Iterate over data.
-                for data in self.dataloaders[s]:
+        try:
+            with torch.no_grad():
+                for s in self.sets:
+                    # Iterate over data.
+                    for data in self.dataloaders[s]:
 
-                    if plt.fignum_exists(fig.number):
+                        if plt.fignum_exists(fig.number):
 
-                        sparse_depth, gt_depth, item_idxs, inputs_rgb = data
-                        sparse_depth = sparse_depth.to(device)
-                        gt_depth = gt_depth.to(device)
-                        inputs_rgb = inputs_rgb.to(device)
-                        if self.input_rgb:
-                            outs = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
-                        else:
-                            outs = self.net(sparse_depth, (sparse_depth > 0).float())                        
-                        d = outs[0].squeeze().cpu().numpy()
-                        cd = outs[1].squeeze().cpu().numpy()
-                        if len(outs) > 2:
-                            s = outs[2].squeeze().cpu().numpy()
-                            cs = outs[3].squeeze().cpu().numpy()
-                        
-
-                        img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0)) * 255)
-                                                  .astype(np.uint8))
-                        ax[0][1].imshow(img_rgb)
-                        #img_rgb.save('rgb.png')
-
-                        sparse_depth = sparse_depth.squeeze().cpu().numpy()
-                        # sparse_depth[1:,:][sparse_depth[1:,:] == 0] =
-                        # sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
-                        # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] =
-                        # sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
-                        # sparse_depth[:,1:][sparse_depth[:,1:] == 0] =
-                        # sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
-                        # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] =
-                        # sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
-                        q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
-                        q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
-                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-
-                        depth_img = cmap[np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
-                                    :]  # depths
-
-                        img_sparse_depth = Image.fromarray(depth_img)
-                        ax[0][0].imshow(img_sparse_depth)
-                        img_sparse_depth.save('lidar img.png')
-
-                        q1_lidar = np.quantile(d[d > 0], 0.05)
-                        q2_lidar = np.quantile(d[d > 0], 0.95)
-                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-
-                        depth_img = cmap[np.ndarray.astype(np.interp(d, (q1_lidar, q2_lidar), (0, 255)), np.int_), :]
-                        img_pred_depth = Image.fromarray(depth_img)
-                        ax[1][0].imshow(img_pred_depth)
-
-
-                        cmap = plt.cm.get_cmap('nipy_spectral', 256)
-                        cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
-                    
-                        c_img = cmap[np.ndarray.astype(np.interp(cd / np.max(cd), (0, 1), (0, 255)), np.int_), :] 
-                        img_pred_c = Image.fromarray(c_img)
-                        ax[1][1].imshow(img_pred_c)
-                        
-                        if len(outs) > 2:
-                            s_img = cmap[np.ndarray.astype(np.interp(s, (0, 1), (0, 255)), np.int_), :]
-                            img_pred_s = Image.fromarray(s_img)
-                            ax[2][0].imshow(img_pred_s)
-
-                            cs_img = cmap[np.ndarray.astype(np.interp(cs / np.max(cs), (0, 1), (0, 255)), np.int_),:]
-                            img_pred_cs = Image.fromarray(cs_img)
-                            ax[2][1].imshow(img_pred_cs)
-
-                        k = plt.waitforbuttonpress()
-                        if k == ord('w'):
-                            img_pred_depth.save('pred depth.png')
-                            img_pred_c.save('pred certainty.png')                        
+                            sparse_depth, gt_depth, item_idxs, inputs_rgb = data
+                            sparse_depth = sparse_depth.to(device)
+                            gt_depth = gt_depth.to(device)
+                            inputs_rgb = inputs_rgb.to(device)
+                            if self.input_rgb:
+                                outs = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)
+                            else:
+                                outs = self.net(sparse_depth, (sparse_depth > 0).float())                        
+                            d = outs[0].squeeze().cpu().numpy()
+                            cd = outs[1].squeeze().cpu().numpy()
                             if len(outs) > 2:
-                                img_pred_s.save('pred smoothness.png')
-                                img_pred_cs.save('pred smoothness certainty.png')
-                        elif k == ord('q'):
-                            fig.close()
-                            return
+                                s = outs[2].squeeze().cpu().numpy()
+                                cs = outs[3].squeeze().cpu().numpy()
+                        
 
+                            img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0)) * 255)
+                                                        .astype(np.uint8))
+                            ax[0][1].imshow(img_rgb)
+                            #img_rgb.save('rgb.png')
+
+                            sparse_depth = sparse_depth.squeeze().cpu().numpy()
+                            # sparse_depth[1:,:][sparse_depth[1:,:] == 0] =
+                            # sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
+                            # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] =
+                            # sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
+                            # sparse_depth[:,1:][sparse_depth[:,1:] == 0] =
+                            # sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
+                            # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] =
+                            # sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
+                            q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
+                            q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
+                            cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                            cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                            depth_img = cmap[np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
+                                        :]  # depths
+
+                            img_sparse_depth = Image.fromarray(depth_img)
+                            ax[0][0].imshow(img_sparse_depth)
+
+                            q1_lidar = np.quantile(d[d > 0], 0.05)
+                            q2_lidar = np.quantile(d[d > 0], 0.95)
+                            cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                            cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+
+                            depth_img = cmap[np.ndarray.astype(np.interp(d, (q1_lidar, q2_lidar), (0, 255)), np.int_), :]
+                            img_pred_depth = Image.fromarray(depth_img)
+                            ax[1][0].imshow(img_pred_depth)
+
+
+                            cmap = plt.cm.get_cmap('nipy_spectral', 256)
+                            cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
+                    
+                            c_img = cmap[np.ndarray.astype(np.interp(cd / np.max(cd), (0, 1), (0, 255)), np.int_), :] 
+                            img_pred_c = Image.fromarray(c_img)
+                            ax[1][1].imshow(img_pred_c)
+                        
+                            if len(outs) > 2:
+                                s_img = cmap[np.ndarray.astype(np.interp(s, (0, 1), (0, 255)), np.int_), :]
+                                img_pred_s = Image.fromarray(s_img)
+                                ax[2][0].imshow(img_pred_s)
+
+                                cs_img = cmap[np.ndarray.astype(np.interp(cs / np.max(cs), (0, 1), (0, 255)), np.int_),:]
+                                img_pred_cs = Image.fromarray(cs_img)
+                                ax[2][1].imshow(img_pred_cs)
+
+                            k = plt.waitforbuttonpress()
+                            if k == ord('w'):
+                                img_sparse_depth.save('lidar img.png')
+                                img_pred_depth.save('pred depth.png')
+                                img_pred_c.save('pred certainty.png')                        
+                                if len(outs) > 2:
+                                    img_pred_s.save('pred smoothness.png')
+                                    img_pred_cs.save('pred smoothness certainty.png')
+                            elif k == ord('q'):
+                                fig.close()
+                                return
+        except:
+            return
 
 
     def return_one_prediction(self, inputs_d, inputs_rgb, original_width=None, original_height=None):
@@ -299,8 +316,8 @@ class KittiDepthTrainer(Trainer):
 
     def train_epoch(self):
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        self.net.train(True)
 
-        skipped = 0
         loss_meter = {}
         for s in self.sets: loss_meter[s] = AverageMeter()
           
@@ -309,33 +326,39 @@ class KittiDepthTrainer(Trainer):
             i = 0
             for data in self.dataloaders[s]:
 
-                sparse_depth = data[0].to(device)
-                gt_depth = data[1].to(device)
-                item_idxs = data[2]
-                if self.input_rgb:
-                    inputs_rgb = data[3].to(device)
-                    t = time.time()
-                    d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
-                else:
-                    t = time.time()
-                    d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                def train_step():
+                    sparse_depth = data[0].to(device)
+                    gt_depth = data[1].to(device)
+                    item_idxs = data[2]
+                    if self.input_rgb:
+                        inputs_rgb = data[3].to(device)
+                        t = time.time()
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
+                    else:
+                        t = time.time()
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
 
-                # Calculate loss for valid pixel in the ground truth
-                loss = self.objective(d, gt_depth, cd, self.epoch)
+                    # Calculate loss for valid pixel in the ground truth
+                    loss = self.objective(d, gt_depth, cd, self.epoch)
 
-                # backward + optimize only if in training phase
-                if s == 'train':
-                    loss.backward()
-                    self.optimizer.step()
+                    # backward + optimize only if in training phase
+                    if s == 'train':
+                        loss.backward()
+                        self.optimizer.step()
+                    self.optimizer.zero_grad()
 
-                self.optimizer.zero_grad()
+
+                    self.net.enforce_limits()
+                    return loss.detach().item(), sparse_depth.detach().size(0)
+
+                loss, npoints = train_step()
 
                 # statistics
-                loss_meter[s].update(loss.item(), sparse_depth.size(0))
+                loss_meter[s].update(loss, npoints)
                 i += 1
-                print('trained batch %d of %d on %s set - loss = %.4f\t%s|' % (i, len(self.dataloaders[s]), s, loss.item(), ' ' * int(50 * loss.item())))
+                print('trained batch %d of %d on %s set - loss = %.4f\t%s|' % (i, len(self.dataloaders[s]), s, loss, ' ' * int(self.disp_scale * loss)))
 
-            print('[{}] Loss: {:.8f} Skipped{:.0f}'.format(s,  loss_meter[s].avg, skipped), end=' ')
+            print('[{}] Loss: {:.8f}'.format(s,  loss_meter[s].avg), end=' ')
 
         return loss_meter
 
@@ -382,9 +405,11 @@ class KittiDepthTrainer(Trainer):
 
         with torch.no_grad():
             for s in self.sets:
-
+                
                 fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
+                fname_ep1 = 'error_' + s + '_epoch_1.txt'
                 if os.path.isfile(os.path.join(self.experiment_dir, fname)):
+
                     with open(os.path.join(self.experiment_dir, fname), 'r') as text_file:
                         text_lines = text_file.read()
                         text_lines = text_lines.splitlines()[2:]
@@ -395,6 +420,8 @@ class KittiDepthTrainer(Trainer):
                             for i in range(len(err_metrics)):
                                 if text_lines[i + 1].split('[')[1].split(']')[0] != err_metrics[i]:
                                     skip = False
+                        if not skip and self.epoch==1 and not os.path.isfile(os.path.join(self.experiment_dir, fname_ep1)):
+                            skip = False
                         if skip:
                             print('Evaluation for %s set already done\n' % s)
                             continue
@@ -494,6 +521,8 @@ class KittiDepthTrainer(Trainer):
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg).replace('.',','))
 
                 # Save evaluation metric to text file
+                if not os.path.isdir(self.experiment_dir):
+                    os.makedirs(self.experiment_dir)
                 with open(os.path.join(self.experiment_dir, fname), 'w') as text_file:
                     text_file.write('Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(s, str(self.epoch - 1)))
                     text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg).replace('.',','))

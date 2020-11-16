@@ -13,6 +13,9 @@ import torch
 class ReturnNone(torch.nn.Module):
     def __init__(self):
         super(ReturnNone, self).__init__()
+        
+    def enforce_limits(self):
+        return
 
     def forward(self, *args):
         return None

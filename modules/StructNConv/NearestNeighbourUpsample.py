@@ -18,6 +18,9 @@ class NearestNeighbourUpsample(torch.nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        
+    def enforce_limits(self):
+        return
 
     def forward(self, d, cd):
         output_size = ((d.size(2)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1,
@@ -25,4 +28,4 @@ class NearestNeighbourUpsample(torch.nn.Module):
         d = F.interpolate(d, output_size, mode='nearest')
         cd = F.interpolate(cd, output_size, mode='nearest')
         return d, cd
-
+    

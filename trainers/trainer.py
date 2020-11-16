@@ -63,7 +63,7 @@ class Trainer(object):
         
         chkpt_path = os.path.join(self.experiment_dir, 'checkpoints')
         if not os.path.exists(chkpt_path):
-                os.makedirs(chkpt_path)
+            os.makedirs(chkpt_path)
                 
         file_path = '{}/{}_ep{:04d}.pth.tar'.format(chkpt_path, net_type, self.epoch)
         torch.save(state, file_path)

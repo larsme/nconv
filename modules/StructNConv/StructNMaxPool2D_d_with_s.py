@@ -22,6 +22,9 @@ class StructNMaxPool2D_d_with_s(torch.nn.Module):
         self.dilation = dilation
         
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
+        
+    def enforce_limits(self):
+        return
 
     def forward(self, d, cd, s, cs, *args):
         _, inds = F.max_pool2d(cd*s, kernel_size=self.kernel_size, stride=self.stride,
