@@ -29,36 +29,6 @@ import torch.backends.cudnn as cudnn
 cudnn.enabled = True
 cudnn.benchmark = True
 
-def count_parameters(network_file=None, params_sub_dir=None, training_ws_path='workspace'):
-    if training_ws_path is None:
-        net_dir = BASE_DIR
-        network_path = network_file
-    else:
-        net_dir = os.path.join(BASE_DIR, training_ws_path)
-        assert os.path.isdir(net_dir)
-        network_path = os.path.join(training_ws_path, network_file)
-    if params_sub_dir is None:
-        experiment_dir = net_dir
-    else:
-        experiment_dir = os.path.join(net_dir, params_sub_dir)
-        assert os.path.isdir(experiment_dir)
-    params_path = os.path.join(experiment_dir, 'params.json')
-    assert os.path.isfile(params_path)
-
-    # Read parameters file
-    with open(params_path, 'r') as fp:
-        params = json.load(fp)
-
-    # Import the network file
-    f = importlib.import_module(network_path.replace('/', '.'))
-    model = f.CNN(params)
-
-    parameter_count = 0
-    for parameter in model.parameters():
-        if parameter.requires_grad:
-            parameter_count += parameter.numel()
-    print('%s \n with parameters %s \n has %s parameters\n' %(network_path, params_path, parameter_count))
-
 
 def load_net(mode='eval', sets=None, checkpoint_num=-1,
              training_ws_path='workspace', network_file=None, params_sub_dir=None, exp_subdir=None):
@@ -161,6 +131,7 @@ if __name__ == "__main__":
                         help='Checkpoint number to load')
     parser.add_argument('-set', action='store', dest='set_', default=None, type=str, nargs='?',
                         help='Which set to evaluate on "val", "selval" or "test"')
+    parser.add_argument('-evaluate_all_epochs', default=False, type=bool)
     args = parser.parse_args()
 
     # Path to the workspace directory
@@ -181,7 +152,7 @@ if __name__ == "__main__":
             load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
                      exp_subdir=args.exp_subdir,
                      mode='traineval', sets=['train', 'val'], checkpoint_num=args.checkpoint_num)\
-                .train(trainsets=['train'], evalsets = ['val'])
+                .train(trainsets=['train'], evalsets = ['val'], evaluate_all_epochs=args.evaluate_all_epochs)
         elif args.mode == 'gen':
             load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
                      exp_subdir=args.exp_subdir,
@@ -194,8 +165,9 @@ if __name__ == "__main__":
                      mode='display', sets=['val'], checkpoint_num=args.checkpoint_num)\
                 .display()
         elif args.mode == 'count_parameters':
-            count_parameters(training_ws_path=args.ws_path, network_file=args.network_file,
-                             params_sub_dir=args.params_sub_dir)
+            load_net(training_ws_path=args.ws_path, network_file=args.network_file, params_sub_dir=args.params_sub_dir,
+                     exp_subdir=args.exp_subdir,
+                     mode='count_parameters', sets=[], checkpoint_num=args.checkpoint_num).count_parameters()
 
     else:
         my_trainer = load_net(training_ws_path=args.ws_path, network_file=args.network_file,

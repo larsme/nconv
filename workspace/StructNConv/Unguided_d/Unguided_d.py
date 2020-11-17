@@ -44,7 +44,7 @@ class CNN(torch.nn.Module):
             sample_padding = 1
 
         # depth modules
-        self.nconv_d = torch.nn.ModuleList([StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+        self.nconv_d = torch.nn.ModuleList([StructNConv2D_d(in_channels=1, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                         kernel_size=5, stride=1, padding=0 if self.lidar_padding else 2, dilation=1),
                         StructNConv2D_d(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                         kernel_size=5, stride=1, padding=0 if self.lidar_padding else 2, dilation=1),
@@ -84,7 +84,6 @@ class CNN(torch.nn.Module):
 
     def forward(self, d_0, cd_0):
         assert d_0.shape == cd_0.shape
-        d_0, cd_0 = d_0.expand(-1, self.nconv_d[0].in_channels,-1,-1), cd_0.expand(-1, self.nconv_d[0].in_channels,-1,-1)
 
         # Stage 0
         d_0, cd_0 = self.nconv_d[0](d_0, cd_0)

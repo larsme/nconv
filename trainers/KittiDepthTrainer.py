@@ -46,11 +46,17 @@ class KittiDepthTrainer(Trainer):
         if params['loss'] == 'RMSELoss':
             self.disp_scale = 45
         elif params['loss'] == "ConfLossDecay":
-            self.disp_scale = 2500
+            self.disp_scale = 2000
         
         for s in self.sets: self.stats[s + '_loss'] = []
                 
-   
+    def count_parameters(self):
+        parameter_count = 0
+        for parameter in self.net.parameters():
+            if parameter.requires_grad:
+                parameter_count += parameter.numel()
+        print('the model has %s parameters\n' %(parameter_count))
+
 ####### Training Function #######
 
     def train(self, trainsets=['train'], evalsets=['val'], evaluate_all_epochs=False):

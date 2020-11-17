@@ -61,6 +61,8 @@
     <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\final_model.pth" />
     <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\params.json" />
     <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_1c\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_CS\params.json" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_new_Init_nb_m_2inC_crop\1\error_val_epoch_0.txt" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_new_Init_nb_m_2inC_crop\params.json" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\xavier_new_Init_nb_m_2inC\1\checkpoints\CNN_ep0001.pth.tar" />
@@ -251,6 +253,8 @@
     <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\checkpoints\" />
     <Folder Include="workspace\StructNConv\Unguided_d\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\" />
+    <Folder Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_1c\" />
+    <Folder Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_CS\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_new_Init_nb_m_2inC_crop\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_new_Init_nb_m_2inC\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\New_Init_no_bias_mirrored\" />
