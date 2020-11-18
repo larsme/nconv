@@ -118,7 +118,9 @@
 ::python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_no_bias_mirrored -exp_subdir 2
 ::python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_no_bias_mirrored -exp_subdir 3
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/Default -exp_subdir 1
+python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/CS -exp_subdir 1 -evaluate_all_epochs true
+
+::python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/Default -exp_subdir 1
 
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_CS -exp_subdir 1
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_CS -exp_subdir 2
@@ -127,6 +129,8 @@ python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path works
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_1c -exp_subdir 1
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_1c -exp_subdir 2
 python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_1c -exp_subdir 3
+
+python run_nconv_cnn.py  -mode traineval -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/CS_1s -exp_subdir 1 -evaluate_all_epochs true
 
 
 

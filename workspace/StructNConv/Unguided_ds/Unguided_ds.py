@@ -25,7 +25,8 @@ from modules.StructNConv.ReturnNone import ReturnNone
 class CNN(torch.nn.Module):
 
     def __init__(self, params):
-        num_channels = params['num_channels']
+        num_channels_d = params['num_channels_d']
+        num_channels_s = params['num_channels_s']
         devalue_pooled_confidence = params['devalue_pooled_confidence']
 
         maxpool_s = params['maxpool_s']
@@ -38,32 +39,32 @@ class CNN(torch.nn.Module):
         super().__init__()
 
         # boundary/smoothness modules
-        self.nconv_s = torch.nn.ModuleList([StructNConv2D_s_with_d(in_channels=1, out_channels=num_channels,init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+        self.nconv_s = torch.nn.ModuleList([StructNConv2D_s_with_d(in_channels=1, in_channels_d=1, out_channels=num_channels_s,init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
-                        StructNConv2D_s_with_d(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_s_with_d(in_channels=num_channels_s, in_channels_d=num_channels_d, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
-                        StructNConv2D_s_with_d(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_s_with_d(in_channels=num_channels_s, in_channels_d=num_channels_d, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
                         # pool
-                        StructNConv2D_s_with_d(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_s_with_d(in_channels=2 * num_channels_s, in_channels_d=2 * num_channels_d, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1),
-                        StructNConv2D_s_with_d(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_s_with_d(in_channels=2 * num_channels_s, in_channels_d=2 * num_channels_d, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1),
-                        StructNConv2D_s_with_d(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_s_with_d(in_channels=2 * num_channels_s, in_channels_d=2 * num_channels_d, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1)])
         # pooling
         if maxpool_s:
-            self.npool_s = StructNMaxPool2D_s(channels=num_channels, init_method=params['init_method'],
+            self.npool_s = StructNMaxPool2D_s(channels=num_channels_s, init_method=params['init_method'],
                                               kernel_size=2, stride=2, padding=0,
                                               devalue_pooled_confidence=devalue_pooled_confidence)
         else:
-            self.npool_s = StructNConv2D_s_with_d(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+            self.npool_s = StructNConv2D_s_with_d(in_channels=num_channels_s, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                   kernel_size=2, stride=2, padding=0, dilation=1,
                                                   devalue_pooled_confidence=devalue_pooled_confidence)
         if nn_upsample_s:
             self.nup_s = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
-            self.nup_s = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+            self.nup_s = StructNDeconv2D(in_channels=num_channels_s, out_channels=num_channels_s, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                          kernel_size=2, stride=2, padding=0, dilation=1)
 
 
@@ -78,31 +79,31 @@ class CNN(torch.nn.Module):
 
         # depth modules
         # in_channels not 1 because of multiplication with output of nconv1_s
-        self.nconv_d = torch.nn.ModuleList([StructNConv2D_d_with_s(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+        self.nconv_d = torch.nn.ModuleList([StructNConv2D_d_with_s(in_channels=1, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
-                        StructNConv2D_d_with_s(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_d_with_s(in_channels=num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
-                        StructNConv2D_d_with_s(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_d_with_s(in_channels=num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=5, stride=1, padding=2, dilation=1),
                         # pool
-                        StructNConv2D_d_with_s(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_d_with_s(in_channels=2 * num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1),
-                        StructNConv2D_d_with_s(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_d_with_s(in_channels=2 * num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1),
-                        StructNConv2D_d_with_s(in_channels=2 * num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+                        StructNConv2D_d_with_s(in_channels=2 * num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                kernel_size=3, stride=1, padding=1, dilation=1),
                         # out
-                        StructNConv2D_out(in_channels=num_channels, init_method=params['init_method'])])
+                        StructNConv2D_out(in_channels=num_channels_d, init_method=params['init_method'])])
         # pooling
         if maxpool_d:
             self.npool_d = StructNMaxPool2D_d_with_s(kernel_size=2, stride=2, padding=0)
         else:
-            self.npool_d = StructNConv2D_d_with_s(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+            self.npool_d = StructNConv2D_d_with_s(in_channels=num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                   kernel_size=2, stride=2, padding=0, dilation=1)
         if nn_upsample_d:
             self.nup_d = NearestNeighbourUpsample(kernel_size=2, stride=2, padding=0)
         else:
-            self.nup_d = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
+            self.nup_d = StructNDeconv2D(in_channels=num_channels_d, out_channels=num_channels_d, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                          kernel_size=2, stride=2, padding=0, dilation=1)
         self.outs = ['d', 'cd', 's', 'cs']
 
@@ -170,7 +171,7 @@ class CNN(torch.nn.Module):
         s_2, cs_2 = torch.cat((s_32, s_2), 1), torch.cat((cs_32, cs_2), 1)
         d_2, cd_2 = torch.cat((d_32, d_2), 1), torch.cat((cd_32, cd_2), 1)
         s_2, cs_2 = self.nconv_s[3](d_2, cd_2, s_2, cs_2)
-        s_prod = self.s_prod_2(s_2, cs_2).repeat(1, 2, 1, 1, 1)
+        s_prod = self.s_prod_2(s_2, cs_2)
         d_2, cd_2 = self.nconv_d[3](d_2, cd_2, s_2, cs_2, s_prod)
 
         # Stage 1
@@ -179,7 +180,7 @@ class CNN(torch.nn.Module):
         s_1, cs_1 = torch.cat((s_21, s_1), 1), torch.cat((cs_21, cs_1), 1)
         d_1, cd_1 = torch.cat((d_21, d_1), 1), torch.cat((cd_21, cd_1), 1)
         s_1, cs_1 = self.nconv_s[4](d_1, cd_1, s_1, cs_1)
-        s_prod = self.s_prod_2(s_1, cs_1).repeat(1, 2, 1, 1, 1)
+        s_prod = self.s_prod_2(s_1, cs_1)
         d_1, cd_1 = self.nconv_d[4](d_1, cd_1, s_1, cs_1, s_prod)
 
         # Stage 0
@@ -188,11 +189,19 @@ class CNN(torch.nn.Module):
         s_0, cs_0 = torch.cat((s_10, s_0), 1), torch.cat((cs_10, cs_0), 1)
         d_0, cd_0 = torch.cat((d_10, d_0), 1), torch.cat((cd_10, cd_0), 1)
         s_0, cs_0 = self.nconv_s[5](d_0, cd_0, s_0, cs_0)
-        s_prod = self.s_prod_2(s_0, cs_0).repeat(1, 2, 1, 1, 1)
+        s_prod = self.s_prod_2(s_0, cs_0)
         d_0, cd_0 = self.nconv_d[5](d_0, cd_0, s_0, cs_0, s_prod)
 
         # output
         d, cd = self.nconv_d[6](d_0, cd_0)
-        s, cs = self.nconv_d[6](s_0, cs_0)
-        s[cs == 0] = 0
+        if s_0.shape[1] == 1:
+            s, cs = s_0, cs_0
+        elif s_0.shape[1] == d_0.shape[1]:
+            s, cs = self.nconv_d[6](s_0, cs_0)
+            s[cs == 0] = 0
+        else:
+            nom = (cs_0 * s_0).mean(1)
+            denom = cs_0.mean(1)
+            s = nom / (denom + self.eps)
+            cs = denom
         return d, cd, s, cs
