@@ -13,8 +13,7 @@ from modules.StructNConv.retrieve_indices import retrieve_indices
 
 class StructNConv2D_s_with_d(torch.nn.Module):
     def __init__(self, init_method='k', mirror_weights=False, 
-                 in_channels=1, out_channels=1, groups=1, channel_first=False,
-                 kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
+                 in_channels=1, out_channels=1, groups=1, kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
         super(StructNConv2D_s_with_d, self).__init__()
 
         self.eps = 1e-20
@@ -23,7 +22,6 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.groups = groups
-        self.channel_first = channel_first
 
         self.kernel_size = kernel_size
         self.stride = stride

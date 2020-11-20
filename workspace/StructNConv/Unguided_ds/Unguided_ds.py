@@ -7,7 +7,9 @@ __email__ = "abdo.eldesokey@gmail.com"
 ########################################
 import torch
 
-from modules.StructNConv.s_prod_KernelChannels import s_prod_KernelChannels
+#from modules.StructNConv.s_prod_KernelChannels import s_prod_KernelChannels
+from modules.StructNConv.s_prod_KernelChannels3 import s_prod_KernelChannels3
+from modules.StructNConv.s_prod_KernelChannels5 import s_prod_KernelChannels5
 
 from modules.StructNConv.StructNMaxPool2D_s import StructNMaxPool2D_s
 from modules.StructNConv.StructNMaxPool2D_d_with_s import StructNMaxPool2D_d_with_s
@@ -68,12 +70,12 @@ class CNN(torch.nn.Module):
 
 
         # s_prod
-        self.s_prod_1 = s_prod_KernelChannels(kernel_size=5, stride=1, padding=2, dilation=1)
+        self.s_prod_1 = s_prod_KernelChannels5()
         if maxpool_d:
             self.s_prod_pool = ReturnNone()
         else:
             self.s_prod_pool = s_prod_KernelChannels(kernel_size=2, stride=2, padding=0, dilation=1)
-        self.s_prod_2 = s_prod_KernelChannels(kernel_size=3, stride=1, padding=1, dilation=1)
+        self.s_prod_2 = s_prod_KernelChannels3()
 
 
         # depth modules
