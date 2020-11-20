@@ -57,7 +57,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
         else:
-            self.spatial_weight = spatial_weight.view(self.in_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
+            self.spatial_weight = spatial_weight
 
             
     def enforce_limits(self):
@@ -81,7 +81,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=self.kernel_size, stride=self.stride,
                                 return_indices=True, padding=self.padding)
 
-        min_div_max = torch.abs(retrieve_indices(d, j_min) / (retrieve_indices(d, j_max) + self.eps))
+        min_div_max = retrieve_indices(d, j_min) / (retrieve_indices(d, j_max) + self.eps)
 
         s_from_d = (1 - self.w_s_from_d) * min_div_max + self.w_s_from_d * min_div_max ** 2
         cs_from_d = retrieve_indices(cd, j_max) * retrieve_indices(cd, j_min)
