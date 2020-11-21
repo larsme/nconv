@@ -121,12 +121,13 @@ class CNN(torch.nn.Module):
         self.nup_s.enforce_limits()
     
     
-    def forward(self, d_0, cd_0):
+    def forward(self, d_0, cd_0, s_0=None, cs_0 = None):
         assert d_0.shape[2] % (self.nup_d.kernel_size ** 3) == 0
         assert d_0.shape[3] % (self.nup_d.kernel_size ** 3) == 0
         assert d_0.shape == cd_0.shape
-
-        s_0 = cs_0 = torch.zeros_like(cd_0)
+        
+        if s_0 is None:
+            s_0 = cs_0 = torch.zeros_like(cd_0)
 
         # Stage 0
         s_0, cs_0 = self.nconv_s[0](d_0, cd_0, s_0, cs_0)
