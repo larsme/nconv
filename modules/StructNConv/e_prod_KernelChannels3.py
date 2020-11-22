@@ -28,9 +28,7 @@ class e_prod_KernelChannels3(torch.nn.Module):
         3 => |
         '''
         s_ext = F.pad(s, (1,1,1,1))
-        s00, s01, s02 = s[:,:,0,:,:].clone() * s_ext[:,:,0,:-2,:-2],  s[:,:,1,:,:].clone()*s_ext[:,:,1,:-2,1:-1], s[:,:,2,:,:].clone()*s_ext[:,:,2,:-2,2:]
-        s10, s11, s12 = s[:,:,3,:,:].clone() * s_ext[:,:,3,1:-1,:-2], torch.ones_like(s[:,:,1,:,:]),              s[:,:,3,:,:].clone()*s_ext[:,:,3,1:-1,2:]
-        s20, s21, s22 = s[:,:,2,:,:].clone() * s_ext[:,:,2,2:,:-2],   s[:,:,1,:,:].clone()*s_ext[:,:,1,2:,1:-1],  s[:,:,0,:,:].clone()*s_ext[:,:,0,2:,2:]
-
-        return torch.stack((s00, s01, s02, s10, s11, s12, s20, s21, s22), dim=2)
+        return torch.stack((s[:,:,0,:,:].clone() * s_ext[:,:,0,:-2,:-2],  s[:,:,1,:,:].clone()*s_ext[:,:,1,:-2,1:-1], s[:,:,2,:,:].clone()*s_ext[:,:,2,:-2,2:],
+                            s[:,:,3,:,:].clone() * s_ext[:,:,3,1:-1,:-2], torch.ones_like(s[:,:,1,:,:]),              s[:,:,3,:,:].clone()*s_ext[:,:,3,1:-1,2:],
+                            s[:,:,2,:,:].clone() * s_ext[:,:,2,2:,:-2],   s[:,:,1,:,:].clone()*s_ext[:,:,1,2:,1:-1],  s[:,:,0,:,:].clone()*s_ext[:,:,0,2:,2:]), dim=2)
 

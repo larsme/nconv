@@ -23,6 +23,7 @@ class NearestNeighbourUpsample2(torch.nn.Module):
         return
 
     def forward(self, d, cd):
+        # dims 1 and 2 are combined, rest is like the normal version
         shape=d.shape
         d,cd = d.view(shape[0], shape[1]*shape[2], shape[3], shape[4]), cd.view(shape[0], shape[1]*shape[2], shape[3], shape[4])
         output_size = ((d.size(2)-1)*self.stride-2*self.padding+(self.kernel_size-1)*self.dilation+1,

@@ -35,13 +35,14 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         # Define Parameters
         self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1, 1))
-        self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels*4, self.in_channels*4, 1, 1))
         if mirror_weights:
             self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
             self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
             self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 10))
         else:
             self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels*4, 1, self.kernel_size, self.kernel_size))
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels*4, self.in_channels*4, 1, 1))
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
@@ -91,6 +92,19 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                                              torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
                                              self.spatial_weight0.flip(dims=(3,)),
                                              torch.cat((self.spatial_weight3, self.spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
+            # / -> |  = \  -> |
+            # / -> -  = \  -> -
+            # | -> /  = |  -> \
+            # - -> /  = -  -> \
+            # / -> /  = \  -> \
+            # / -> \  = \  -> /
+            channel_weight = torch.stack((torch.stack((self.channel_weight[:,:,0], self.channel_weight[:,:,1], self.channel_weight[:,:,2], self.channel_weight[:,:,3]), dim = 1),
+                                          torch.stack((self.channel_weight[:,:,4], self.channel_weight[:,:,5], self.channel_weight[:,:,4], self.channel_weight[:,:,6]), dim = 1),
+                                          torch.stack((self.channel_weight[:,:,2], self.channel_weight[:,:,1], self.channel_weight[:,:,0], self.channel_weight[:,:,3]), dim = 1),
+                                          torch.stack((self.channel_weight[:,:,7], self.channel_weight[:,:,8], self.channel_weight[:,:,7], self.channel_weight[:,:,9]), dim = 1)), 
+                                         dim=3).view(self.out_channels*4, self.in_channels*4, 1, 1)
+        else:
+            channel_weight=self.channel_weight
 
 
         # calculate smoothness from depths
@@ -116,15 +130,16 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         # d_min on one side divided by d_max on the other = low value => edge in the middle
         # clamp is needed to prevent min > max, which can happen because they originate in different regions
         # ordinarely, this would still maintain min <= overlap <= max, but because of ^, d_min might chooes an initialized value over the true min of 0
-        d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:,:-2,:-2] / (d_max[:,:,2:,2:] + self.eps),d_min[:,:,:-2,:-2] / (d_max[:,:,2:,2:] + self.eps)), dim=2),        
-                                    torch.stack((d_min[:,:,:-2,1:-1] / (d_max[:,:,2:,1:-1] + self.eps),d_min[:,:,:-2,1:-1] / (d_max[:,:,2:,1:-1] + self.eps)), dim=2),
-                                    torch.stack((d_min[:,:,:-2,2:] / (d_max[:,:,2:,:-2] + self.eps),d_min[:,:,:-2,2:] / (d_max[:,:,2:,:-2] + self.eps)), dim=2),
-                                    torch.stack((d_min[:,:,1:-1,2:] / (d_max[:,:,1:-1,:-2] + self.eps),d_min[:,:,1:-1,2:] / (d_max[:,:,1:-1,:-2] + self.eps)), dim=2)),dim=2),0,1)
+        d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:  ] + self.eps), d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:  ] + self.eps)), dim=2),        
+                                                 torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps)), dim=2),
+                                                 torch.stack((d_min[:,:, :-2,2:  ] / (d_max[:,:,2:  , :-2] + self.eps), d_min[:,:, :-2,2:  ] / (d_max[:,:,2:  , :-2] + self.eps)), dim=2),
+                                                 torch.stack((d_min[:,:,1:-1,2:  ] / (d_max[:,:,1:-1, :-2] + self.eps), d_min[:,:,1:-1,2:  ] / (d_max[:,:,1:-1, :-2] + self.eps)), dim=2)),
+                                                dim=2),0,1)
 
-        c_min_div_max = torch.stack((torch.stack((cd_min[:,:,:-2,:-2] * cd_max[:,:,2:,2:], cd_min[:,:,:-2,:-2] * cd_max[:,:,2:,2:]), dim=2),
-                                     torch.stack((cd_min[:,:,:-2,1:-1] * cd_max[:,:,2:,1:-1], cd_min[:,:,:-2,1:-1] * cd_max[:,:,2:,1:-1]), dim=2),
-                                     torch.stack((cd_min[:,:,:-2,2:] * cd_max[:,:,2:,:-2], cd_min[:,:,:-2,2:] * cd_max[:,:,2:,:-2]), dim=2),
-                                     torch.stack((cd_min[:,:,1:-1,2:] * cd_max[:,:,1:-1,:-2], cd_min[:,:,1:-1,2:] * cd_max[:,:,1:-1,:-2]), dim=2)), dim=2)
+        c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:  ], cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:  ]), dim=2),
+                                     torch.stack((cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1], cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1]), dim=2),
+                                     torch.stack((cd_min[:,:, :-2,2:  ] * cd_max[:,:,2:  , :-2], cd_min[:,:, :-2,2:  ] * cd_max[:,:,2:  , :-2]), dim=2),
+                                     torch.stack((cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2], cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2]), dim=2)), dim=2)
         
         j_min = torch.argmax(c_min_div_max / (d_min_div_max + self.eps), dim=3, keepdim=True)
         
@@ -143,9 +158,9 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         cs_spatial = denom / (torch.sum(self.spatial_weight) + self.eps)
 
         # Normalized Convolution along channel dimensions
-        nom = F.conv2d(cs_spatial * s_spatial, self.channel_weight, groups=self.groups)
-        denom = F.conv2d(cs_spatial, self.channel_weight, groups=self.groups)
+        nom = F.conv2d(cs_spatial * s_spatial, channel_weight, groups=self.groups)
+        denom = F.conv2d(cs_spatial, channel_weight, groups=self.groups)
         s = (nom / (denom + self.eps)).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
-        cs = (denom / (torch.sum(self.channel_weight) + self.eps)).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
+        cs = (denom / (torch.sum(channel_weight) + self.eps)).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
 
         return s, cs

@@ -171,8 +171,8 @@ class KittiDepthTrainer(Trainer):
                             d = outs[0].squeeze().cpu().numpy()
                             cd = outs[1].squeeze().cpu().numpy()
                             if len(outs) > 2:
-                                s = outs[2].squeeze().cpu().numpy()
-                                cs = outs[3].squeeze().cpu().numpy()
+                                s = outs[2].squeeze().cpu().numpy().prod(0)
+                                cs = outs[3].squeeze().cpu().numpy().mean(0)
                         
 
                             img_rgb = Image.fromarray((inputs_rgb.squeeze().cpu().numpy().transpose((1, 2, 0)) * 255)
@@ -181,14 +181,11 @@ class KittiDepthTrainer(Trainer):
                             #img_rgb.save('rgb.png')
 
                             sparse_depth = sparse_depth.squeeze().cpu().numpy()
-                            # sparse_depth[1:,:][sparse_depth[1:,:] == 0] =
-                            # sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
-                            # sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] =
-                            # sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
-                            # sparse_depth[:,1:][sparse_depth[:,1:] == 0] =
-                            # sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
-                            # sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] =
-                            # sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
+                            if True:
+                                 sparse_depth[1:,:][sparse_depth[1:,:] == 0] = sparse_depth[:-1,:][sparse_depth[1:,:] == 0]
+                                 sparse_depth[:-1,:][sparse_depth[:-1,:] == 0] = sparse_depth[1:,:][sparse_depth[:-1,:] == 0]
+                                 sparse_depth[:,1:][sparse_depth[:,1:] == 0] = sparse_depth[:,:-1][sparse_depth[:,1:] == 0]
+                                 sparse_depth[:,:-1][sparse_depth[:,:-1] == 0] = sparse_depth[:,1:][sparse_depth[:,:-1] == 0]
                             q1_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.05)
                             q2_lidar = np.quantile(sparse_depth[sparse_depth > 0], 0.95)
                             cmap = plt.cm.get_cmap('nipy_spectral', 256)
@@ -435,7 +432,7 @@ class KittiDepthTrainer(Trainer):
                 i = 0
                 # Iterate over data.
                 for data in self.dataloaders[s]:
-                    print('eval batch %d of %d' % (i, len(self.dataloaders[s])))
+                    print('eval batch %d of %d' % (i, len(self.dataloaders[s])), end='\r')
 
                     sparse_depth = data[0].to(device)
                     gt_depth = data[1].to(device)

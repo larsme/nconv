@@ -55,7 +55,7 @@ class CNN(torch.nn.Module):
                                                kernel_size=3, stride=1, padding=1, dilation=1)])
         # pooling
         if maxpool_s:
-            self.npool_s = StructNMaxPool2D_s(channels=num_channels, init_method=params['init_method'],
+            self.npool_s = StructNMaxPool2D_s(channels=num_channels,
                                               kernel_size=2, stride=2, padding=0,
                                               devalue_pooled_confidence=devalue_pooled_confidence)
         else:
