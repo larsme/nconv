@@ -7,13 +7,12 @@ class Trainer(object):
     """Base trainer class. Contains functions for training and saving/loading chackpoints.
     Trainer classes should inherit from this one and overload the train_epoch function."""
 
-    def __init__(self, net, optimizer, lr_scheduler, objective, params, use_gpu=True, experiment_dir=None):
+    def __init__(self, net, optimizer, lr_scheduler, objective, params, experiment_dir=None):
 
         self.net = net
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.objective = objective
-        self.use_gpu = use_gpu
         self.use_save_checkpoint = experiment_dir is not None
         self.params=params
 
@@ -26,9 +25,6 @@ class Trainer(object):
 
         self.epoch = 1
         self.stats = {}
-
-        if self.use_gpu:
-            self.net.cuda()
 
 
     def train(self, max_epochs):
@@ -58,7 +54,6 @@ class Trainer(object):
             'optimizer' : self.optimizer.state_dict(),
             'lr_scheduler': self.lr_scheduler.state_dict(),
             'stats' : self.stats,
-            'use_gpu' : self.use_gpu,
         }
         
         chkpt_path = os.path.join(self.experiment_dir, 'checkpoints')
@@ -120,8 +115,7 @@ class Trainer(object):
                 self.lr_scheduler.load_state_dict(checkpoint_dict['lr_scheduler'])
                 self.lr_scheduler.last_epoch = checkpoint_dict['epoch'] 
         self.stats = checkpoint_dict['stats']
-        self.use_gpu = checkpoint_dict['use_gpu']
-        
+
         return True
 
 

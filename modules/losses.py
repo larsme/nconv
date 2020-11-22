@@ -16,10 +16,10 @@ class InputOutputLoss(nn.Module):
         super().__init__()
                       
     def forward(self, outputs, target, cout, epoch_num, inputs, *args):           
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         err = F.smooth_l1_loss(outputs*val_pixels, target*val_pixels, reduction='none')
         
-        val_pixels = torch.ne(inputs, 0).float().cuda()
+        val_pixels = torch.ne(inputs, 0).float()
         inp_loss = F.smooth_l1_loss(outputs*val_pixels, inputs*val_pixels, reduction='none')
         
         loss = err + 0.1 * inp_loss
@@ -34,7 +34,7 @@ class ConfLossDecay(nn.Module):
         super().__init__()
                       
     def forward(self, outputs, target, cout, epoch_num, *args):           
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         err = F.smooth_l1_loss(outputs*val_pixels, target*val_pixels, reduction='none')
         cert = cout*val_pixels - err*cout*val_pixels
         loss = err - (1/epoch_num) * cert
@@ -46,7 +46,7 @@ class ConfLossDecayMSE(nn.Module):
         super().__init__()
 
     def forward(self, outputs, target, cout, epoch_num, *args):           
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         err = F.mse_loss(outputs*val_pixels, target*val_pixels, reduction='none')
         cert = cout*val_pixels - err*cout*val_pixels
         loss = err - (1/epoch_num) * cert
@@ -59,7 +59,7 @@ class ConfLoss(nn.Module):
         super().__init__()
                       
     def forward(self, outputs, target, cout, *args):    
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         err = F.smooth_l1_loss(outputs*val_pixels, target*val_pixels, reduction='none')
         loss = err-cout*val_pixels+err*cout*val_pixels
         return torch.mean(loss)
@@ -71,7 +71,7 @@ class SmoothL1Loss(nn.Module):
         super().__init__()
 
     def forward(self, outputs, target, *args):
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         loss = F.smooth_l1_loss(outputs*val_pixels, target*val_pixels, reduction='none')
         return torch.mean(loss)
 
@@ -83,7 +83,7 @@ class RMSELoss(nn.Module):
         super().__init__()
 
     def forward(self, outputs, target, *args):       
-        val_pixels = (target>0).float().cuda()
+        val_pixels = (target>0).float()
         err = (target*val_pixels - outputs*val_pixels)**2
         loss = torch.sum(err.view(err.size(0), 1, -1), -1, keepdim=True)
         cnt = torch.sum(val_pixels.view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -97,7 +97,7 @@ class MSELoss(nn.Module):
         super().__init__()
 
     def forward(self, outputs, target, *args):
-        val_pixels = torch.ne(target, 0).float().cuda()
+        val_pixels = torch.ne(target, 0).float()
         loss = target*val_pixels - outputs*val_pixels
         return torch.mean(loss**2)
     

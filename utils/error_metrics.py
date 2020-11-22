@@ -10,7 +10,7 @@ class MAE(nn.Module):
         super().__init__()
 
     def forward(self, d, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = torch.abs(gt_d*val_pixels - d*val_pixels)
         loss = torch.sum(err.view(err.size(0), 1, -1), -1, keepdim=True)
         cnt = torch.sum(val_pixels.view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -22,7 +22,7 @@ class RMSE(nn.Module):
         super().__init__()
 
     def forward(self, d, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = (gt_d*val_pixels - d*val_pixels)**2
         loss = torch.sum(err.view(err.size(0), 1, -1), -1, keepdim=True)
         cnt = torch.sum(val_pixels.view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -33,7 +33,7 @@ class MRE(nn.Module):
         super().__init__()
 
     def forward(self, d, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = torch.abs(gt_d*val_pixels - d*val_pixels)
         r = err / (gt_d*val_pixels+1e-6)
         cnt = torch.sum(val_pixels.view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -45,7 +45,7 @@ class Deltas(nn.Module):
         super().__init__()
 
     def forward(self, d, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         rel = torch.max((gt_d*val_pixels)/(d*val_pixels + 1e-3), (d*val_pixels) / (gt_d*val_pixels))
         
         cnt = torch.sum(val_pixels.view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -63,7 +63,7 @@ class wMAE(nn.Module):
         super().__init__()
 
     def forward(self, d, cd, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = torch.abs(gt_d*val_pixels - d*val_pixels)
         loss = torch.sum((err*cd).view(err.size(0), 1, -1), -1, keepdim=True)
         cnt = torch.sum((val_pixels*cd).view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -75,7 +75,7 @@ class wRMSE(nn.Module):
         super().__init__()
 
     def forward(self, d, cd, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = (gt_d*val_pixels - d*val_pixels)**2
         loss = torch.sum((err*cd).view(err.size(0), 1, -1), -1, keepdim=True)
         cnt = torch.sum((val_pixels*cd).view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -86,7 +86,7 @@ class wMRE(nn.Module):
         super().__init__()
 
     def forward(self, d, cd, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         err = torch.abs(gt_d*val_pixels - d*val_pixels)
         r = err / (gt_d*val_pixels+1e-6)
         cnt = torch.sum((val_pixels*cd).view(val_pixels.size(0), 1, -1), -1, keepdim=True)
@@ -98,7 +98,7 @@ class wDeltas(nn.Module):
         super().__init__()
 
     def forward(self, d, cd, gt_d, *args):     
-        val_pixels = (gt_d>0).float().cuda()
+        val_pixels = (gt_d>0).float()
         rel = torch.max((gt_d*val_pixels)/(d*val_pixels + 1e-3), (d*val_pixels) / (gt_d*val_pixels))
         
         cnt = torch.sum((val_pixels*cd).view(val_pixels.size(0), 1, -1), -1, keepdim=True)

@@ -37,33 +37,47 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1, 1))
         self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels*4, self.in_channels*4, 1, 1))
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels*4, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels*4, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels*4, 1, self.kernel_size, self.kernel_size))
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.w_s_from_d)
             torch.nn.init.xavier_uniform_(self.w_prop) + 1
             torch.nn.init.xavier_uniform_(self.channel_weight) + 1
-            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+            if mirror_weights:
+               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+            else:
+               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.w_s_from_d)
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.channel_weight)
-            torch.nn.init.kaiming_uniform_(spatial_weight)
-        spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-        
+            if mirror_weights:
+               torch.nn.init.kaiming_uniform_(self.spatial_weight0)
+               torch.nn.init.kaiming_uniform_(self.spatial_weight1)
+               torch.nn.init.kaiming_uniform_(self.spatial_weight3)
+            else:
+                torch.nn.init.kaiming_uniform_(self.spatial_weight)
         if mirror_weights:
-            self.true_spatial_weight = spatial_weight
+            self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
+            self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
+            self.spatial_weight3.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
         else:
-            self.spatial_weight = spatial_weight
+            self.spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
 
             
     def enforce_limits(self):
         # Enforce positive weights
         if self.mirror_weights:
-            self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
+            self.spatial_weight0.data = F.softplus(self.spatial_weight0, beta=10)
+            self.spatial_weight1.data = F.softplus(self.spatial_weight1, beta=10)
+            self.spatial_weight3.data = F.softplus(self.spatial_weight3, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
@@ -73,7 +87,11 @@ class StructNConv2D_e_with_d(torch.nn.Module):
 
     def forward(self, d, cd, s, cs):
         if self.mirror_weights:
-            self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+            self.spatial_weight = torch.cat((self.spatial_weight0,
+                                             torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
+                                             self.spatial_weight0.flip(dims=(3,)),
+                                             torch.cat((self.spatial_weight3, self.spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
+
 
         # calculate smoothness from depths
         #edges:

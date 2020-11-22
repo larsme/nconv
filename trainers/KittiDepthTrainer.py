@@ -29,8 +29,7 @@ class KittiDepthTrainer(Trainer):
                  experiment_dir=None, sets=['train', 'val'], mode='', use_load_checkpoint=None):
 
         # Call the constructor of the parent class (trainer)
-        super().__init__(net, optimizer, lr_scheduler, objective, params, use_gpu=params['use_gpu'],
-                         experiment_dir=experiment_dir)
+        super().__init__(net, optimizer, lr_scheduler, objective, params, experiment_dir=experiment_dir)
           
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders
@@ -144,8 +143,8 @@ class KittiDepthTrainer(Trainer):
                     print('Evaluating using initial parameters')
 
         self.net.train(False)
-
-        device = torch.device('cuda:0' if self.use_gpu else 'cpu')
+        
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         
         fig,ax = plt.subplots(1 + len(self.net.outs)//2, 2,)
         plt.axis("off")
@@ -288,7 +287,7 @@ class KittiDepthTrainer(Trainer):
             inputs_rgb = torch.tensor(inputs_rgb, dtype=torch.float)
 
 
-        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
 
         inputs_d = inputs_d.to(device)
         inputs_c = inputs_c.to(device)
@@ -321,7 +320,7 @@ class KittiDepthTrainer(Trainer):
 
 
     def train_epoch(self):
-        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         self.net.train(True)
 
         loss_meter = {}
@@ -406,8 +405,8 @@ class KittiDepthTrainer(Trainer):
             if parameter.requires_grad:
                 parameter_count += parameter.numel()
         err['Parameters'].update(parameter_count)
-
-        device = torch.device('cuda:0' if self.use_gpu else 'cpu')
+        
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
 
         with torch.no_grad():
             for s in self.sets:
@@ -589,8 +588,8 @@ class KittiDepthTrainer(Trainer):
         from PIL import Image
 
         self.net.train(False)
-
-        device = torch.device('cuda:0' if self.use_gpu else 'cpu')
+        
+        device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
 
         kitti_raw_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../data/kitti_raw')
         res_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../data/completed_depth')
