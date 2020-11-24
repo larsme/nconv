@@ -47,7 +47,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.w_s_from_d)
+            torch.nn.init.xavier_uniform_(self.w_s_from_d) + 2
             torch.nn.init.xavier_uniform_(self.w_prop) + 1
             torch.nn.init.xavier_uniform_(self.channel_weight) + 1
             if mirror_weights:
@@ -57,7 +57,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             else:
                torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.w_s_from_d)
+            torch.nn.init.kaiming_uniform_(self.w_s_from_d) +1
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             if mirror_weights:
@@ -84,7 +84,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
         self.w_prop.data = F.softplus(self.w_prop, beta=10)
-        self.w_s_from_d.data = torch.clamp(self.w_s_from_d, -1, 1)
+        self.w_s_from_d.data = F.softplus(self.w_s_from_d, beta=10)
 
 
     def forward(self, d, cd, s, cs):
@@ -146,9 +146,9 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                                      torch.stack((cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2], cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2]), dim=2)), dim=2)
         
         j_min = torch.argmax(c_min_div_max / (d_min_div_max + self.eps), dim=3, keepdim=True)
-        
-        min_div_max, cs_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(3)**2, c_min_div_max.gather(index=j_min, dim=2).squeeze(3)
-        s_from_d = (1 - self.w_s_from_d) * min_div_max + self.w_s_from_d * min_div_max ** 2
+
+        s_from_d = torch.pow(torch.max(d_min_div_max.gather(index=j_min, dim=2).squeeze(3), self.eps*torch.ones_like(w_s_from_d)), w_s_from_d)
+        cs_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(3)
 
         # combine with previous smoothness
         s_prop = ((self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])

@@ -23,7 +23,7 @@ class Trainer(object):
             if not os.path.exists(self.experiment_dir):
                 os.makedirs(self.experiment_dir)
 
-        self.epoch = 1
+        self.epoch = 0
         self.stats = {}
 
 
