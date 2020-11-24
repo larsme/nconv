@@ -147,7 +147,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         
         j_min = torch.argmax(c_min_div_max / (d_min_div_max + self.eps), dim=3, keepdim=True)
         
-        min_div_max, cs_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(3), c_min_div_max.gather(index=j_min, dim=2).squeeze(3)
+        min_div_max, cs_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(3)**2, c_min_div_max.gather(index=j_min, dim=2).squeeze(3)
         s_from_d = (1 - self.w_s_from_d) * min_div_max + self.w_s_from_d * min_div_max ** 2
 
         # combine with previous smoothness
