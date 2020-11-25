@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <CommandLineArguments> -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/Default -exp_subdir 1</CommandLineArguments>
+    <CommandLineArguments>  -mode display -network_file Unguided_ds -ws_path workspace/StructNConv/Unguided_ds -params_sub_dir Experiments/w_s_from_d -exp_subdir 1</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -52,16 +52,23 @@
     <Content Include="run_exp_script.bat" />
     <Content Include="run_exp_script.sh" />
     <Content Include="TODO.txt" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d_squared\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\Default\params.json" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\1\checkpoints\CNN_ep0001.pth.tar" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\1\error_val_epoch_1.txt" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\1\final_model.pth" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\params.json" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\checkpoints\CNN_ep0001.pth.tar" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\error_val_epoch_1.txt" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\final_model.pth" />
-    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\Error pool\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\Error mirror, pool\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\w_s_from_d\params.json" />
     <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\1\checkpoints\CNN_ep0001.pth.tar" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\1\error_val_epoch_1.txt" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\1\final_model.pth" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\1\checkpoints\CNN_ep0001.pth.tar" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\1\error_val_epoch_1.txt" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\1\final_model.pth" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_ds\Experiments\Error Pool\params.json" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_1c_pS\params.json" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_1c\params.json" />
     <Content Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_CS\params.json" />
@@ -254,19 +261,27 @@
     <Folder Include="workspace\StructNConv\" />
     <Folder Include="workspace\StructNConv\Unguided_de\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d_squared\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\Default\" />
-    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\Default\1\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\Error pool\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\Error mirror, pool\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\Error mirror, pool\1\" />
     <Folder Include="workspace\StructNConv\Unguided_ds\" />
     <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default\1\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default\2\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\1\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old\1\checkpoints\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Error Pool\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\w_s_from_d\" />
     <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\" />
-    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old\1\checkpoints\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Error_Pool\1\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Error Pool\2\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\1\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Default_old incl pool error\1\checkpoints\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\Error_Pool\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\1\" />
+    <Folder Include="workspace\StructNConv\Unguided_ds\Experiments\RMSE_old incl pool error\1\checkpoints\" />
     <Folder Include="workspace\StructNConv\Unguided_d\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments\Xavier_nI_nb_m_1c_pS\" />

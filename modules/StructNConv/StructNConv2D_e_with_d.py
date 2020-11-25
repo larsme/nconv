@@ -33,14 +33,15 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
 
         # Define Parameters
-        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1, 1))
         if mirror_weights:
+            self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 3, 1, 1))
             self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
             self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
             self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 10))
         else:
+            self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 4, 1, 1))
             self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels*4, 1, self.kernel_size, self.kernel_size))
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels*4, self.in_channels*4, 1, 1))
         
@@ -83,7 +84,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
         self.w_prop.data = F.softplus(self.w_prop, beta=10)
-        self.w_s_from_d.data = torch.sigmoid(self.w_s_from_d)
+        self.w_s_from_d.data = torch.clamp(self.w_s_from_d, -1, 1)
 
 
     def forward(self, d, cd, s, cs):
@@ -103,8 +104,11 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                                           torch.stack((self.channel_weight[:,:,2], self.channel_weight[:,:,1], self.channel_weight[:,:,0], self.channel_weight[:,:,3]), dim = 1),
                                           torch.stack((self.channel_weight[:,:,7], self.channel_weight[:,:,8], self.channel_weight[:,:,7], self.channel_weight[:,:,9]), dim = 1)), 
                                          dim=3).view(self.out_channels*4, self.in_channels*4, 1, 1)
+            w_s_from_d = torch.cat((self.w_s_from_d[:,:,1,None,:,:], self.w_s_from_d), dim = 2)
         else:
             channel_weight=self.channel_weight
+            w_s_from_d = self.w_s_from_d
+
 
 
         # calculate smoothness from depths

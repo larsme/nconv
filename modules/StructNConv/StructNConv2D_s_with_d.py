@@ -33,7 +33,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
 
         # Define Parameters
-        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
+        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
         self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
         if mirror_weights:
@@ -68,7 +68,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
         self.w_prop.data = F.softplus(self.w_prop, beta=10)
-        self.w_s_from_d.data = torch.sigmoid(self.w_s_from_d)
+        self.w_s_from_d.data = torch.clamp(self.w_s_from_d, -1, 1)
 
 
     def forward(self, d, cd, s, cs):

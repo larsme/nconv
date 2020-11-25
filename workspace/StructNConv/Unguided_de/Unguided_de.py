@@ -107,7 +107,7 @@ class CNN(torch.nn.Module):
         else:
             self.nup_d = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                          kernel_size=2, stride=2, padding=0, dilation=1)
-        self.outs = ['d', 'cd', 's', 'cs']
+        self.outs = ['d', 'cd', 'e', 'ce']
 
         self.enforce_limits()
 

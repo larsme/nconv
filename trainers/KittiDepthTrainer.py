@@ -77,14 +77,17 @@ class KittiDepthTrainer(Trainer):
             elif self.use_load_checkpoint == -1:
                 print('=> Loading last checkpoint ...', end=' ')
                 if self.load_checkpoint():
-                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch - 1))
+                    print('Checkpoint for epoch %d was loaded successfully!' % (self.epoch))
+                elif (self.epoch) % self.save_chkpt_each == 0:
+                    self.save_checkpoint()
+                    print('Checkpoint not found - new Checkpoint was saved successfully!')
         # if self.epoch-1 == self.params['num_epochs']:
             # success = True
             # break
             
         self.sets = trainsets
 
-        for epoch in range(self.epoch, self.params['num_epochs'] + 1): # range function returns max_epochs-1
+        for epoch in range(max(1,self.epoch), self.params['num_epochs'] + 1): # range function returns max_epochs-1
             self.epoch = epoch
 
             if evaluate_all_epochs:
@@ -170,7 +173,10 @@ class KittiDepthTrainer(Trainer):
                                 outs = self.net(sparse_depth, (sparse_depth > 0).float())                        
                             d = outs[0].squeeze().cpu().numpy()
                             cd = outs[1].squeeze().cpu().numpy()
-                            if len(outs) > 2:
+                            if 's' in self.net.outs:
+                                s = outs[2].squeeze().cpu().numpy()
+                                cs = outs[3].squeeze().cpu().numpy()
+                            elif 'e' in self.net.outs:
                                 s = outs[2].squeeze().cpu().numpy().prod(0)
                                 cs = outs[3].squeeze().cpu().numpy().mean(0)
                         

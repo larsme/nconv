@@ -24,8 +24,7 @@ class StructNMaxPool2D_s(torch.nn.Module):
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
                         
     def enforce_limits(self):
-        # Enforce weights between -1 and 1
-        self.w_s_pool.data = torch.tanh(self.w_s_pool)
+        return
 
     def forward(self, d, cd, s, cs, *args):
         _, inds = F.max_pool2d(cs*(1-s), kernel_size=self.kernel_size, stride=self.stride,
