@@ -41,14 +41,17 @@ class StructNConv2D_d_with_s(torch.nn.Module):
             spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
             spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
-        self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
+        if self.in_channels > 1:
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            if self.in_channels > 1:
+                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
             torch.nn.init.xavier_uniform_(spatial_weight) + 1
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.channel_weight)
+            if self.in_channels > 1:
+                torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(spatial_weight)
         spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
         
@@ -64,7 +67,8 @@ class StructNConv2D_d_with_s(torch.nn.Module):
             self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-        self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
+        if self.in_channels > 1:
+            self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
 
     def forward(self, d, cd, s, cs, s_prod_roll):
         if self.mirror_weights:
@@ -77,13 +81,16 @@ class StructNConv2D_d_with_s(torch.nn.Module):
         # Normalized Convolution along spatial dimensions
         nom = F.conv3d(cd_prop * d_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
         denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        d_spatial = nom / (denom+self.eps)
-        cd_spatial = denom / (torch.sum(self.spatial_weight)+self.eps)
-
-        # Normalized Convolution along channel dimensions
-        nom = F.conv2d(cd_spatial * d_spatial, self.channel_weight, groups=self.groups)
-        denom = F.conv2d(cd_spatial, self.channel_weight, groups=self.groups)
         d = nom / (denom+self.eps)
-        cd = denom / (torch.sum(self.channel_weight)+self.eps)
+        cd = denom / (torch.sum(self.spatial_weight)+self.eps)
+
+        if self.in_channels > 1:
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cd * d, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cd, self.channel_weight, groups=self.groups)
+            d = nom / (denom+self.eps)
+            cd = denom / (torch.sum(self.channel_weight)+self.eps)
+        elif self.out_channels > 1:
+            d, cd = d.expand(-1, self.out_channels,-1,-1), cd.expand(-1, self.out_channels,-1,-1)
 
         return d, cd * self.devalue_conf

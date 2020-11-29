@@ -35,7 +35,8 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         # Define Parameters
         self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
-        self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
+        if self.in_channels > 1:
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
         if mirror_weights:
             spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
@@ -45,12 +46,14 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.w_s_from_d)
             torch.nn.init.xavier_uniform_(self.w_prop)+1
-            torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            if self.in_channels > 1:
+                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
             torch.nn.init.xavier_uniform_(spatial_weight) + 1
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.w_s_from_d)
             torch.nn.init.kaiming_uniform_(self.w_prop)
-            torch.nn.init.kaiming_uniform_(self.channel_weight)
+            if self.in_channels > 1:
+                torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(spatial_weight)
         spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
         
@@ -66,7 +69,8 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-        self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
+        if self.in_channels > 1:
+            self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
         self.w_prop.data = F.softplus(self.w_prop, beta=10)
         self.w_s_from_d.data = torch.clamp(self.w_s_from_d, -1, 1)
 
@@ -98,14 +102,17 @@ class StructNConv2D_s_with_d(torch.nn.Module):
                         padding=self.padding, dilation=self.dilation).squeeze(2)
         denom = F.conv2d(cs_prop, self.spatial_weight, groups=self.in_channels, stride=self.stride,
                             padding=self.padding, dilation=self.dilation).squeeze(2)
-        s_spatial = nom / (denom + self.eps)
-        cs_spatial = denom / (torch.sum(self.spatial_weight) + self.eps)
-
-        # Normalized Convolution along channel dimensions
-        nom = F.conv2d(cs_spatial * s_spatial, self.channel_weight, groups=self.groups)
-        denom = F.conv2d(cs_spatial, self.channel_weight, groups=self.groups)
         s = nom / (denom + self.eps)
-        cs = denom / (torch.sum(self.channel_weight) + self.eps)
+        cs = denom / (torch.sum(self.spatial_weight) + self.eps)
+        
+        if self.in_channels > 1:
+            # Normalized Convolution along channel dimensions
+            nom = F.conv2d(cs * s, self.channel_weight, groups=self.groups)
+            denom = F.conv2d(cs, self.channel_weight, groups=self.groups)
+            s = nom / (denom + self.eps)
+            cs = denom / (torch.sum(self.channel_weight) + self.eps)
+        elif self.out_channels > 1:
+            s, cs = s.expand(-1, self.out_channels,-1,-1), cs.expand(-1, self.out_channels,-1,-1)
 
         if self.stride > 1:
             s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)
