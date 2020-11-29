@@ -171,7 +171,7 @@ class CNN(torch.nn.Module):
         e_2, ce_2 = torch.cat((e_32, e_2), 1), torch.cat((ce_32, ce_2), 1)
         d_2, cd_2 = torch.cat((d_32, d_2), 1), torch.cat((cd_32, cd_2), 1)
         e_2, ce_2 = self.nconv_e[3](d_2, cd_2, e_2, ce_2)
-        e_prod = self.e_prod_2(e_2, ce_2).repeat(1, 2, 1, 1, 1)
+        e_prod = self.e_prod_2(e_2, ce_2)
         d_2, cd_2 = self.nconv_d[3](d_2, cd_2, e_2, ce_2, e_prod)
 
         # Stage 1
@@ -180,7 +180,7 @@ class CNN(torch.nn.Module):
         e_1, ce_1 = torch.cat((e_21, e_1), 1), torch.cat((ce_21, ce_1), 1)
         d_1, cd_1 = torch.cat((d_21, d_1), 1), torch.cat((cd_21, cd_1), 1)
         e_1, ce_1 = self.nconv_e[4](d_1, cd_1, e_1, ce_1)
-        e_prod = self.e_prod_2(e_1, ce_1).repeat(1, 2, 1, 1, 1)
+        e_prod = self.e_prod_2(e_1, ce_1)
         d_1, cd_1 = self.nconv_d[4](d_1, cd_1, e_1, ce_1, e_prod)
 
         # Stage 0
@@ -189,7 +189,7 @@ class CNN(torch.nn.Module):
         e_0, ce_0 = torch.cat((e_10, e_0), 1), torch.cat((ce_10, ce_0), 1)
         d_0, cd_0 = torch.cat((d_10, d_0), 1), torch.cat((cd_10, cd_0), 1)
         e_0, ce_0 = self.nconv_e[5](d_0, cd_0, e_0, ce_0)
-        e_prod = self.e_prod_2(e_0, ce_0).repeat(1, 2, 1, 1, 1)
+        e_prod = self.e_prod_2(e_0, ce_0)
         d_0, cd_0 = self.nconv_d[5](d_0, cd_0, e_0, ce_0, e_prod)
 
         # output

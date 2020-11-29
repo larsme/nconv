@@ -38,9 +38,9 @@ class StructNConv2D_d_with_s(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, self.kernel_size))
         if self.in_channels > 1:
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
 
@@ -58,7 +58,7 @@ class StructNConv2D_d_with_s(torch.nn.Module):
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
         else:
-            self.spatial_weight = spatial_weight.view(self.in_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
+            self.spatial_weight = spatial_weight.view(self.out_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
 
 
     def enforce_limits(self):
@@ -72,17 +72,8 @@ class StructNConv2D_d_with_s(torch.nn.Module):
 
     def forward(self, d, cd, s, cs, s_prod_roll):
         if self.mirror_weights:
-            self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3).view(self.in_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
-
-        d_roll = self.kernel_channels.kernel_channels(d)
-        cd_roll = self.kernel_channels.kernel_channels(cd)
-        cd_prop = cd_roll * s_prod_roll
-
-        # Normalized Convolution along spatial dimensions
-        nom = F.conv3d(cd_prop * d_roll, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.in_channels).squeeze(2)
-        d = nom / (denom+self.eps)
-        cd = denom / (torch.sum(self.spatial_weight)+self.eps)
+            self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3).view(self.out_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
+            
 
         if self.in_channels > 1:
             # Normalized Convolution along channel dimensions
@@ -92,5 +83,15 @@ class StructNConv2D_d_with_s(torch.nn.Module):
             cd = denom / (torch.sum(self.channel_weight)+self.eps)
         elif self.out_channels > 1:
             d, cd = d.expand(-1, self.out_channels,-1,-1), cd.expand(-1, self.out_channels,-1,-1)
+
+        d_roll = self.kernel_channels.kernel_channels(d)
+        cd_roll = self.kernel_channels.kernel_channels(cd)
+        cd_prop = cd_roll * s_prod_roll
+
+        # Normalized Convolution along spatial dimensions
+        nom = F.conv3d(cd_prop * d_roll, self.spatial_weight, groups=self.out_channels).squeeze(2)
+        denom = F.conv3d(cd_prop, self.spatial_weight, groups=self.out_channels).squeeze(2)
+        d = nom / (denom+self.eps)
+        cd = denom / (torch.sum(self.spatial_weight)+self.eps)
 
         return d, cd * self.devalue_conf
