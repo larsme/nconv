@@ -54,18 +54,22 @@ class StructNDeconv2D(torch.nn.Module):
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
 
-    def forward(self, d, cd):
+    def forward(self, d, cd, target_shape):
         if self.mirror_weights:
             self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+            
+        shape=d.shape
+        output_padding = (target_shape[2] - ((shape[2] - 1) * self.stride - 2 * self.padding + self.dilation * (self.kernel_size - 1) + 1),
+                          target_shape[3] - ((shape[3] - 1) * self.stride - 2 * self.padding + self.dilation * (self.kernel_size - 1) + 1))
 
         # Normalized Deconvolution along spatial dimensions
         nom = F.conv_transpose2d(cd * d, self.spatial_weight, groups=self.in_channels,
-                                 stride=self.stride, padding=self.padding, dilation=self.dilation)
+                                 stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
         denom = F.conv_transpose2d(cd, self.spatial_weight, groups=self.in_channels,
-                                   stride=self.stride, padding=self.padding, dilation=self.dilation)
+                                   stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
         cdenom = F.conv_transpose2d(torch.ones_like(cd), self.spatial_weight, groups=self.in_channels,
-                                    stride=self.stride, padding=self.padding, dilation=self.dilation)
-        d = nom / (denom+self.eps)
-        cd = denom / (cdenom+self.eps)
+                                    stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
+        d = nom / (denom + self.eps)
+        cd = denom / (cdenom + self.eps)
 
         return d, cd
