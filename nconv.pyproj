@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <CommandLineArguments>  -mode display -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/pow_deconv -exp_subdir 1</CommandLineArguments>
+    <CommandLineArguments>  -mode display -network_file Unguided_de2 -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/pow_deconv -exp_subdir 1_1 -evaluate_all_epochs true -checkpoint_num 2</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -231,8 +231,8 @@
     <Compile Include="utils\AverageMeter.py" />
     <Compile Include="utils\error_metrics.py" />
     <Compile Include="utils\saveTensorToImages.py" />
+    <Compile Include="workspace\StructNConv\Unguided_de\Unguided_de2.py" />
     <Compile Include="workspace\StructNConv\Unguided_de\Unguided_de.py" />
-    <Compile Include="workspace\StructNConv\Unguided_ds\Unguided_ds².py" />
     <Compile Include="workspace\StructNConv\Unguided_ds\Unguided_ds.py" />
     <Compile Include="workspace\StructNConv\Unguided_d\Unguided_d.py" />
   </ItemGroup>
