@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <CommandLineArguments>  -mode display -network_file Unguided_de2 -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/pow_deconv -exp_subdir 1_1 -evaluate_all_epochs true -checkpoint_num 2</CommandLineArguments>
+    <CommandLineArguments>  -mode display -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/pow_deconv -exp_subdir 1 -evaluate_all_epochs true</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -53,6 +53,7 @@
     <Content Include="run_exp_script.sh" />
     <Content Include="TODO.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\c_init\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d_squared\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d\params.json" />
@@ -208,6 +209,7 @@
     <Compile Include="modules\StructNConv\NearestNeighbourUpsample.py" />
     <Compile Include="modules\StructNConv\retrieve_indices.py" />
     <Compile Include="modules\StructNConv\ReturnNone.py" />
+    <Compile Include="modules\StructNConv\C_init.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_d.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_d_with_s.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_out.py" />
@@ -264,6 +266,7 @@
     <Folder Include="workspace\StructNConv\Unguided_de\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\c_init\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d_squared\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\w_s_from_d\" />
