@@ -54,6 +54,7 @@
     <Content Include="TODO.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\c_init\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\prod\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\error_val_epoch_0.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\error_val_epoch_1.txt" />
@@ -288,6 +289,7 @@
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\c_init\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\prod\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv\" />
