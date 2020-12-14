@@ -25,6 +25,9 @@ class StructNMaxPool2D_e(torch.nn.Module):
     def enforce_limits(self):
         return
 
+    def regularization_loss(self):
+        return 0
+
     def forward(self, d, cd, s, cs, *args):
         # edge directions are converted to channels, actual pooling is the same as in StructNMaxPool2D_s
         # this means the new edge directions may originate from different locations in the pooling field

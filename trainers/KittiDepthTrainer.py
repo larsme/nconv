@@ -54,7 +54,7 @@ class KittiDepthTrainer(Trainer):
         for parameter in self.net.parameters():
             if parameter.requires_grad:
                 parameter_count += parameter.numel()
-        print('the model has %s parameters\n' %(parameter_count))
+        print('the model has %s parameters\n' % (parameter_count))
 
 ####### Training Function #######
 
@@ -149,7 +149,7 @@ class KittiDepthTrainer(Trainer):
         
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         
-        fig,ax = plt.subplots(1 + len(self.net.outs)//2, 2,)
+        fig,ax = plt.subplots(1 + len(self.net.outs) // 2, 2,)
         plt.axis("off")
         plt.tight_layout()
         for a in fig.axes:
@@ -348,6 +348,8 @@ class KittiDepthTrainer(Trainer):
 
                     # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(d, gt_depth, cd, self.epoch)
+                    if self.params['regularize']:
+                        loss += self.params['regularize'] * self.net.regularization_loss()
 
                     # backward + optimize only if in training phase
                     if s == 'train':
@@ -428,7 +430,7 @@ class KittiDepthTrainer(Trainer):
                             for i in range(len(err_metrics)):
                                 if text_lines[i + 1].split('[')[1].split(']')[0] != err_metrics[i]:
                                     skip = False
-                        if not skip and self.epoch==1 and not os.path.isfile(os.path.join(self.experiment_dir, fname_ep1)):
+                        if not skip and self.epoch == 1 and not os.path.isfile(os.path.join(self.experiment_dir, fname_ep1)):
                             skip = False
                         if skip:
                             print('Evaluation for %s set already done\n' % s)

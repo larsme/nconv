@@ -32,15 +32,9 @@ class StructNDeconv2D(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2)*0.5)
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
-
-        # Init Parameters
-        if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(spatial_weight) + 1
-        else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(spatial_weight)
+            spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size)*0.5)
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
@@ -53,21 +47,34 @@ class StructNDeconv2D(torch.nn.Module):
             self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
+             
+    def regularization_loss(self):
+        if self.mirror_weights:
+            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+        else:
+            spatial_weight = self.spatial_weight
+        loss = (torch.nn.ReLU()(spatial_weight[:,:,:self.kernel_size // 2,:] - spatial_weight[:,:,1:self.kernel_size // 2 + 1,:]).mean() + #
+                torch.nn.ReLU()(spatial_weight[:,:,self.kernel_size // 2 + 1:,:] - spatial_weight[:,:,self.kernel_size // 2 : -1,:]).mean() + #
+                torch.nn.ReLU()(spatial_weight[:,:,:,:self.kernel_size // 2] - spatial_weight[:,:,:,1:self.kernel_size // 2 + 1]).mean() + #
+                torch.nn.ReLU()(spatial_weight[:,:,:,self.kernel_size // 2 + 1:] - spatial_weight[:,:,:,self.kernel_size // 2 : -1]).mean() #
+                ) / spatial_weight.mean()
+        return loss
 
     def forward(self, d, cd, target_shape):
         if self.mirror_weights:
-            self.spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
-            
-        shape=d.shape
+            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+        else:
+            spatial_weight = self.spatial_weight
+        shape = d.shape
         output_padding = (target_shape[2] - ((shape[2] - 1) * self.stride - 2 * self.padding + self.dilation * (self.kernel_size - 1) + 1),
                           target_shape[3] - ((shape[3] - 1) * self.stride - 2 * self.padding + self.dilation * (self.kernel_size - 1) + 1))
 
         # Normalized Deconvolution along spatial dimensions
-        nom = F.conv_transpose2d(cd * d, self.spatial_weight, groups=self.in_channels,
+        nom = F.conv_transpose2d(cd * d, spatial_weight, groups=self.in_channels,
                                  stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
-        denom = F.conv_transpose2d(cd, self.spatial_weight, groups=self.in_channels,
+        denom = F.conv_transpose2d(cd, spatial_weight, groups=self.in_channels,
                                    stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
-        cdenom = F.conv_transpose2d(torch.ones_like(cd), self.spatial_weight, groups=self.in_channels,
+        cdenom = F.conv_transpose2d(torch.ones_like(cd), spatial_weight, groups=self.in_channels,
                                     stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding)
         d = nom / (denom + self.eps)
         cd = denom / (cdenom + self.eps)

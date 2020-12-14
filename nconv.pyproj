@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <CommandLineArguments>  -mode display -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/pow_deconv -exp_subdir 1 -evaluate_all_epochs true</CommandLineArguments>
+    <CommandLineArguments> -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/sep_pow_reg -exp_subdir 1 -evaluate_all_epochs true</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -54,7 +54,8 @@
     <Content Include="TODO.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\c_init\params.json" />
-    <Content Include="workspace\StructNConv\Unguided_de\Experiments\prod\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg2\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\error_val_epoch_0.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\error_val_epoch_1.txt" />
@@ -223,7 +224,6 @@
     <Compile Include="dataloader\OwnDepthDataset.py" />
     <Compile Include="modules\losses.py" />
     <Compile Include="modules\NConv2D.py" />
-    <Compile Include="modules\StructNConv\e_prod_KernelChannels5_prod.py" />
     <Compile Include="modules\StructNConv\KernelChannels.py" />
     <Compile Include="modules\StructNConv\NearestNeighbourUpsample2.py" />
     <Compile Include="modules\StructNConv\NearestNeighbourUpsample.py" />
@@ -231,7 +231,6 @@
     <Compile Include="modules\StructNConv\ReturnNone.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_d.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_d_with_s.py" />
-    <Compile Include="modules\StructNConv\StructNConv2D_e_with_d_prod.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_out.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_e_with_d.py" />
     <Compile Include="modules\StructNConv\StructNConv2D_s_with_d.py" />
@@ -240,7 +239,6 @@
     <Compile Include="modules\StructNConv\StructNMaxPool2D_d.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_d_with_e.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_d_with_s.py" />
-    <Compile Include="modules\StructNConv\StructNMaxPool2D_e_prod.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_e.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_s.py" />
     <Compile Include="modules\StructNConv\s_prod_KernelChannels.py" />
@@ -254,7 +252,6 @@
     <Compile Include="utils\AverageMeter.py" />
     <Compile Include="utils\error_metrics.py" />
     <Compile Include="utils\saveTensorToImages.py" />
-    <Compile Include="workspace\StructNConv\Unguided_de\Unguided_de_prod.py" />
     <Compile Include="workspace\StructNConv\Unguided_de\Unguided_de2.py" />
     <Compile Include="workspace\StructNConv\Unguided_de\Unguided_de.py" />
     <Compile Include="workspace\StructNConv\Unguided_ds\Unguided_ds.py" />
@@ -289,7 +286,8 @@
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\c_init\" />
-    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\prod\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg2\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv - pot bug\1\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow_deconv\" />

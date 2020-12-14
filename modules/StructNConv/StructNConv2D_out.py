@@ -21,12 +21,7 @@ class StructNConv2D_out(torch.nn.Module):
 
         # Define Parameters
         if self.in_channels>1:
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
-            # Init Parameters
-            if self.init_method == 'x':  # Xavier
-                torch.nn.init.xavier_uniform_(self.channel_weight)+1
-            else:  # elif self.init_method == 'k': # Kaiming
-                torch.nn.init.kaiming_uniform_(self.channel_weight)
+            self.channel_weight = torch.nn.Parameter(data=torch.ones(1, self.in_channels, 1, 1)*0.5)
         #self.unseen = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
 
             
@@ -34,6 +29,9 @@ class StructNConv2D_out(torch.nn.Module):
         # Enforce positive weights
         if self.in_channels>1:
             self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
+            
+    def regularization_loss(self):
+        return 0
 
     def forward(self, d, cd):
                 

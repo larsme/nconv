@@ -19,6 +19,7 @@
     "lr_decay": 0.1,
     "lr_decay_step": 10,
     "mirror_weights": true,
+    "regularize": 0.1,
     "num_channels": 1,
     "init_method": "nk",
     "maxpool_e": true,
