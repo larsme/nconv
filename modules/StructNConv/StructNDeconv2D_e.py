@@ -32,12 +32,27 @@ class StructNDeconv2D_e(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            self.spatial_weight0 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size)*0.5)
-            self.spatial_weight1 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2)*0.5)
-            self.spatial_weight3 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2)*0.5)
+            self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels * 4, 1, self.kernel_size, self.kernel_size)*0.5)
-
+            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels * 4, 1, self.kernel_size, self.kernel_size))
+        
+        # Init Parameters
+        if self.init_method == 'x':  # Xavier
+            if mirror_weights:
+               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+            else:
+               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
+        else:  # elif self.init_method == 'k': # Kaiming
+            if mirror_weights:
+               torch.nn.init.kaiming_uniform_(self.spatial_weight0)
+               torch.nn.init.kaiming_uniform_(self.spatial_weight1)
+               torch.nn.init.kaiming_uniform_(self.spatial_weight3)
+            else:
+                torch.nn.init.kaiming_uniform_(self.spatial_weight)
         if mirror_weights:
             self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
             self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
@@ -54,21 +69,7 @@ class StructNDeconv2D_e(torch.nn.Module):
             self.spatial_weight3.data = F.softplus(self.spatial_weight3, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-             
-    def regularization_loss(self):
-        if self.mirror_weights:
-            spatial_weight = torch.cat((self.spatial_weight0,
-                                             torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
-                                             self.spatial_weight0.flip(dims=(3,)),
-                                             torch.cat((self.spatial_weight3, self.spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
-        else:
-            spatial_weight = self.spatial_weight
-        loss = (torch.nn.ReLU()(spatial_weight[:,:,:self.kernel_size // 2,:] - spatial_weight[:,:,1:self.kernel_size // 2 + 1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,self.kernel_size // 2 + 1:,:] - spatial_weight[:,:,self.kernel_size // 2 : -1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,:self.kernel_size // 2] - spatial_weight[:,:,:,1:self.kernel_size // 2 + 1]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,self.kernel_size // 2 + 1:] - spatial_weight[:,:,:,self.kernel_size // 2 : -1]).mean() #
-                ) / spatial_weight.mean()
-        return loss
+
 
     def forward(self, e, ce, target_shape):
         if self.mirror_weights:

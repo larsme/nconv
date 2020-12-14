@@ -26,8 +26,8 @@ class StructNMaxPool2D_d_with_e(torch.nn.Module):
     def enforce_limits(self):
         return
 
-    def forward(self, d, cd, s, cs, *args):
-        _, inds = F.max_pool2d(cd*s.prod(dim=2), kernel_size=self.kernel_size, stride=self.stride,
+    def forward(self, d, cd, e, ce, *args):
+        _, inds = F.max_pool2d(cd*e.prod(dim=2), kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
 
         return retrieve_indices(d, inds), retrieve_indices(cd, inds) * self.devalue_conf

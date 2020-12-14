@@ -111,7 +111,7 @@ class CNN(torch.nn.Module):
         self.outs = ['d', 'cd', 'e', 'ce']
 
         self.enforce_limits()
-        
+
     def enforce_limits(self):
         for nconv in self.nconv_d:
             nconv.enforce_limits()
@@ -121,21 +121,9 @@ class CNN(torch.nn.Module):
         self.nup_d.enforce_limits()
         self.npool_e.enforce_limits()
         self.nup_e.enforce_limits()
-
-    def regularization_loss(self):
-        loss = 0
-        for nconv in self.nconv_d:
-            loss+=nconv.regularization_loss()
-        for nconv in self.nconv_e:
-            loss+=nconv.regularization_loss()
-        loss+=self.npool_d.regularization_loss()
-        loss+=self.nup_d.regularization_loss()
-        loss+=self.npool_e.regularization_loss()
-        loss+=self.nup_e.regularization_loss()
-        return loss
     
     
-    def forward(self, d_0, cd_0, e_0=None, ce_0=None):
+    def forward(self, d_0, cd_0, e_0=None, ce_0 = None):
         if e_0 is None:
             e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device)        
 

@@ -38,28 +38,28 @@ class StructNConv2D_d_with_s(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2)*0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, 1, self.kernel_size, self.kernel_size)*0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, self.kernel_size))
         if self.in_channels > 1:
-            self.channel_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, self.in_channels, 1, 1)*0.5)
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
+
+        # Init Parameters
+        if self.init_method == 'x':  # Xavier
+            if self.in_channels > 1:
+                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+        else:  # elif self.init_method == 'k': # Kaiming
+            if self.in_channels > 1:
+                torch.nn.init.kaiming_uniform_(self.channel_weight)
+            torch.nn.init.kaiming_uniform_(spatial_weight)
+        spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
         else:
             self.spatial_weight = spatial_weight.view(self.out_channels, 1, self.kernel_size * self.kernel_size, 1, 1)
-            
-    def regularization_loss(self):
-        if self.mirror_weights:
-            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3).view(self.out_channels, 1, self.kernel_size ,self.kernel_size)
-        else:
-            spatial_weight = self.spatial_weight.view(self.out_channels, 1, self.kernel_size ,self.kernel_size)
-        loss = (torch.nn.ReLU()(spatial_weight[:,:,:self.kernel_size // 2,:] - spatial_weight[:,:,1:self.kernel_size // 2 + 1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,self.kernel_size // 2 + 1:,:] - spatial_weight[:,:,self.kernel_size // 2 : -1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,:self.kernel_size // 2] - spatial_weight[:,:,:,1:self.kernel_size // 2 + 1]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,self.kernel_size // 2 + 1:] - spatial_weight[:,:,:,self.kernel_size // 2 : -1]).mean() #
-                ) / spatial_weight.mean()
-        return loss
+
 
     def enforce_limits(self):
         # Enforce positive weights

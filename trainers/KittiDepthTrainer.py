@@ -348,8 +348,6 @@ class KittiDepthTrainer(Trainer):
 
                     # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(d, gt_depth, cd, self.epoch)
-                    if self.params['regularize']:
-                        loss += self.params['regularize'] * self.net.regularization_loss()
 
                     # backward + optimize only if in training phase
                     if s == 'train':

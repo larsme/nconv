@@ -25,10 +25,7 @@ class StructNMaxPool2D_e(torch.nn.Module):
     def enforce_limits(self):
         return
 
-    def regularization_loss(self):
-        return 0
-
-    def forward(self, d, cd, s, cs, *args):
+    def forward(self, d, cd, e, ce, *args):
         # edge directions are converted to channels, actual pooling is the same as in StructNMaxPool2D_s
         # this means the new edge directions may originate from different locations in the pooling field
         
@@ -37,9 +34,9 @@ class StructNMaxPool2D_e(torch.nn.Module):
         #1 => -
         #2 => \
         #3 => |
-        s, cs = s.view(s.shape[0], s.shape[1] * s.shape[2], s.shape[3], s.shape[4]), cs.view(s.shape[0], s.shape[1] * s.shape[2], s.shape[3], s.shape[4])
-        _, inds = F.max_pool2d(cs * (1 - s), kernel_size=self.kernel_size, stride=self.stride,
+        e, ce = e.view(e.shape[0], e.shape[1] * e.shape[2], e.shape[3], e.shape[4]), ce.view(e.shape[0], e.shape[1] * e.shape[2], e.shape[3], e.shape[4])
+        _, inds = F.max_pool2d(ce * (1 - e), kernel_size=self.kernel_size, stride=self.stride,
                                padding=self.padding, dilation=self.dilation, return_indices=True)
         shape = inds.shape
 
-        return retrieve_indices(s, inds).view(shape[0], shape[1] // 4, 4, shape[2], shape[3]), retrieve_indices(cs, inds).view(shape[0], shape[1] // 4, 4, shape[2], shape[3]) * self.devalue_conf
+        return retrieve_indices(e, inds).view(shape[0], shape[1] // 4, 4, shape[2], shape[3]), retrieve_indices(ce, inds).view(shape[0], shape[1] // 4, 4, shape[2], shape[3]) * self.devalue_conf

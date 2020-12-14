@@ -32,9 +32,15 @@ class StructNDeconv2D(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2)*0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size)*0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+
+        # Init Parameters
+        if self.init_method == 'x':  # Xavier
+            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+        else:  # elif self.init_method == 'k': # Kaiming
+            torch.nn.init.kaiming_uniform_(spatial_weight)
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
@@ -47,18 +53,6 @@ class StructNDeconv2D(torch.nn.Module):
             self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-             
-    def regularization_loss(self):
-        if self.mirror_weights:
-            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
-        else:
-            spatial_weight = self.spatial_weight
-        loss = (torch.nn.ReLU()(spatial_weight[:,:,:self.kernel_size // 2,:] - spatial_weight[:,:,1:self.kernel_size // 2 + 1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,self.kernel_size // 2 + 1:,:] - spatial_weight[:,:,self.kernel_size // 2 : -1,:]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,:self.kernel_size // 2] - spatial_weight[:,:,:,1:self.kernel_size // 2 + 1]).mean() + #
-                torch.nn.ReLU()(spatial_weight[:,:,:,self.kernel_size // 2 + 1:] - spatial_weight[:,:,:,self.kernel_size // 2 : -1]).mean() #
-                ) / spatial_weight.mean()
-        return loss
 
     def forward(self, d, cd, target_shape):
         if self.mirror_weights:

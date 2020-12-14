@@ -33,17 +33,30 @@ class StructNConv2D_d(torch.nn.Module):
 
         # Define Parameters
         if self.in_channels > 1:
-            self.channel_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, self.in_channels, 1, 1) * 0.5)
+            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
         if mirror_weights == 2:
             rad = (self.kernel_size + 1) // 2
             ntri = (rad * (rad + 1)) // 2
             ntri -=1
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, ntri) * 0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, ntri))
         elif mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2) * 0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, 1, self.kernel_size, self.kernel_size) * 0.5)
+            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, self.kernel_size))
 
+        # Init Parameters
+        if 'x' in self.init_method:  # Xavier
+            if self.in_channels > 1:
+                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+        elif 'k' in self.init_method: # Kaiming
+            if self.in_channels > 1:
+                torch.nn.init.kaiming_uniform_(self.channel_weight)
+            torch.nn.init.kaiming_uniform_(spatial_weight)
+        if 'n' in self.init_method and mirror_weights != 2:
+            spatial_weight.data[-1,:, self.kernel_size // 2, self.kernel_size // 2] = 3
+            if in_channels > 1:
+                spatial_weight.data[-1,:,:,:] = 1
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
