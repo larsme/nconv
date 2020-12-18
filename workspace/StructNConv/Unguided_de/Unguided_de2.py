@@ -24,6 +24,7 @@ class CNN(torch.nn.Module):
         self.net1.training=False
 
         self.net2 = Unguided_de(params)
+        self.net2.load_state_dict(checkpoint_dict['net'])        
         
         self.outs = ['d', 'cd', 'e', 'ce']
 
