@@ -44,7 +44,7 @@ class KittiDepthTrainer(Trainer):
         
         if params['loss'] == 'RMSELoss':
             self.disp_scale = 45
-        elif params['loss'] == "ConfLossDecay":
+        elif params['loss'] == "ConfLossDecay" or params['loss'] == "SmoothL1Loss":
             self.disp_scale = 2000
         
         for s in self.sets: self.stats[s + '_loss'] = []
