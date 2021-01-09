@@ -54,7 +54,9 @@
     <Content Include="TODO.txt" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\pow\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\c_init\params.json" />
-    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_rec\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_smoothl1_rec\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_smoothl1\params.json" />
+    <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_rec_old\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg2\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg\params.json" />
     <Content Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\params.json" />
@@ -287,7 +289,9 @@
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\pow\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\c_init\" />
-    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_rec\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_smoothl1_rec\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_smoothl1\" />
+    <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_rec_old\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg2\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow_reg\" />
     <Folder Include="workspace\StructNConv\Unguided_de\Experiments\sep_pow\" />
