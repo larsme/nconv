@@ -125,7 +125,7 @@ class CNN(torch.nn.Module):
     
     def forward(self, d_0, cd_0, e_0=None, ce_0 = None):
         if e_0 is None:
-            e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device)        
+            e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device, dtype=d_0.dtype)        
 
         # Stage 0
         e_0, ce_0 = self.nconv_e[0](d_0, cd_0, e_0, ce_0)

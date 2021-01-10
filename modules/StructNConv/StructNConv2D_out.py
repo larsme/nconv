@@ -14,7 +14,7 @@ class StructNConv2D_out(torch.nn.Module):
     def __init__(self, init_method='k', in_channels=1):
         super(StructNConv2D_out, self).__init__()
 
-        self.eps = 1e-20
+        self.eps =  6e-5
         self.init_method = init_method
 
         self.in_channels = in_channels

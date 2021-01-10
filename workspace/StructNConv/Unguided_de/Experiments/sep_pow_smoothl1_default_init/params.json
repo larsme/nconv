@@ -5,6 +5,7 @@
     "gpu_id": 0,
     "invert_depth": false,
     "data_normalize_factor": 256,
+    "dtype": "float16",
     "kitti_depth_dataset_dir": "data/kitti_depth",
     "kitti_rgb_dataset_dir": "data/kitti_raw",
     "net1_checkpoint": "workspace/StructNConv/Unguided_de/Experiments/sep_pow/1/checkpoints/CNN_ep0022.pth.tar",

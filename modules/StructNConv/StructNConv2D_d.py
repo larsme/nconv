@@ -15,7 +15,7 @@ class StructNConv2D_d(torch.nn.Module):
                  kernel_size=1, stride=1, padding=0, dilation=1, devalue_pooled_confidence=True):
         super(StructNConv2D_d, self).__init__()
 
-        self.eps = 1e-20
+        self.eps = 6e-5
         self.init_method = init_method
 
         self.in_channels = in_channels

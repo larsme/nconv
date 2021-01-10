@@ -34,7 +34,7 @@ def KittiDepthDataloader(params, sets, mode):
                                                     norm_factor=norm_factor, invert_depth=invert_depth,
                                                     load_rgb=load_rgb, rgb_dir=kitti_rgb_dir,
                                                     resize=True, lidar_padding=lidar_padding, crop_top=crop_top,
-                                                    desired_image_width=1216, desired_image_height=352)
+                                                    desired_image_width=1216, desired_image_height=352, dtype=params["dtype"])
 
         # Select the desired number of images from the training set
         if params['train_on'] != 'full':
@@ -54,7 +54,7 @@ def KittiDepthDataloader(params, sets, mode):
                                                   norm_factor=norm_factor, invert_depth=invert_depth,
                                                   load_rgb=load_rgb, rgb_dir=kitti_rgb_dir,
                                                   resize=True, lidar_padding=lidar_padding,
-                                                  desired_image_width=1216, desired_image_height=352)
+                                                  desired_image_width=1216, desired_image_height=352, dtype=params["dtype"])
         dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=mode == 'display', batch_size=1 if mode == 'display' else params['val_batch_sz'],
                                         num_workers=4, pin_memory=True)
         dataset_sizes['val'] = {len(image_datasets['val'])}
@@ -68,7 +68,7 @@ def KittiDepthDataloader(params, sets, mode):
         image_datasets['selval'] = KittiDepthDataset(selval_kitti_depth_dir, setname='selval',
                                                      norm_factor=norm_factor, invert_depth=invert_depth,
                                                      load_rgb=load_rgb, rgb_dir=kitti_rgb_dir,
-                                                     resize=False, lidar_padding=lidar_padding)
+                                                     resize=False, lidar_padding=lidar_padding, dtype=params["dtype"])
 
         dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=mode == 'display', batch_size=1 if mode == 'display' else params['test_batch_sz'],
                                            num_workers=4, pin_memory=True)
@@ -83,7 +83,7 @@ def KittiDepthDataloader(params, sets, mode):
         image_datasets['test'] = KittiDepthDataset(test_kitti_depth_dir, setname='test',
                                                    norm_factor=norm_factor, invert_depth=invert_depth,
                                                    load_rgb=load_rgb, rgb_dir=kitti_rgb_dir,
-                                                   resize=False, lidar_padding=lidar_padding)
+                                                   resize=False, lidar_padding=lidar_padding, dtype=params["dtype"])
 
         dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=1 if mode == 'display' else params['test_batch_sz'],
                                          num_workers=4, pin_memory=True)

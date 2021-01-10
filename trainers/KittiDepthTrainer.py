@@ -327,6 +327,8 @@ class KittiDepthTrainer(Trainer):
 
     def train_epoch(self):
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
+        if self.params["dtype"] == "float16":
+            self.net = self.net.half()
         self.net.train(True)
         torch.backends.cudnn.benchmark = True
 
@@ -345,10 +347,10 @@ class KittiDepthTrainer(Trainer):
                     if self.input_rgb:
                         inputs_rgb = data[3].to(device)
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0).astype(sparse_depth.dtype), inputs_rgb)[:2]
                     else:
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                        d, cd = self.net(sparse_depth, (sparse_depth > 0))[:2]
 
                     # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(d, gt_depth, cd, self.epoch)
