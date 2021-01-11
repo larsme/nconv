@@ -328,6 +328,7 @@ class KittiDepthTrainer(Trainer):
     def train_epoch(self):
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         self.net.train(True)
+        torch.backends.cudnn.benchmark = True
 
         loss_meter = {}
         for s in self.sets: loss_meter[s] = AverageMeter()

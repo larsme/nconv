@@ -9,7 +9,6 @@ __email__ = "abdo.eldesokey@gmail.com"
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 import torch
-from torchvision import transforms
 import numpy as np
 import glob
 import cv2
