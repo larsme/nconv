@@ -10,8 +10,6 @@ __email__ = "abdo.eldesokey@gmail.com"
 import torch
 import torch.nn.functional as F
 
-from modules.StructNConv.KernelChannels import KernelChannels
-
 
 class StructNConv2D_d_with_s(torch.nn.Module):
     def __init__(self, init_method='k', mirror_weights=False, in_channels=1, out_channels=1, groups=1,
@@ -33,8 +31,7 @@ class StructNConv2D_d_with_s(torch.nn.Module):
         self.mirror_weights = mirror_weights
         
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
-
-        self.kernel_channels = KernelChannels(kernel_size, stride, padding, dilation)
+        self.unfold= torch.nn.Unfold(kernel_size=self.kernel_size,stride=self.stride, padding=self.padding,dilation=self.dilation)
 
         # Define Parameters
         if mirror_weights:
@@ -85,9 +82,9 @@ class StructNConv2D_d_with_s(torch.nn.Module):
             cd = denom / (torch.sum(self.channel_weight) + self.eps)
         elif self.out_channels > 1:
             d, cd = d.expand(-1, self.out_channels,-1,-1), cd.expand(-1, self.out_channels,-1,-1)
-
-        d_roll = self.kernel_channels.kernel_channels(d)
-        cd_roll = self.kernel_channels.kernel_channels(cd)
+            
+        d_roll = self.unfold(d).view(s_prod_roll.shape)  
+        cd_roll = self.unfold(cd).view(s_prod_roll.shape)  
         cd_prop = cd_roll * s_prod_roll
 
         # Normalized Convolution along spatial dimensions

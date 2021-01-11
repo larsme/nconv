@@ -1,7 +1,6 @@
 
 import torch
 import torch.nn.functional as F
-from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class e_prod_KernelChannels3(torch.nn.Module):

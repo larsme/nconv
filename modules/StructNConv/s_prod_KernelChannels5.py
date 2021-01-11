@@ -1,12 +1,10 @@
 
 import torch
-from modules.StructNConv.KernelChannels import KernelChannels
 
 
 class s_prod_KernelChannels5(torch.nn.Module):
     def __init__(self):
         super(s_prod_KernelChannels5, self).__init__()
-        self.kernel_channels = KernelChannels(5, 1, 2, 1)
 
     def forward(self, s, cs):
         '''
@@ -21,8 +19,8 @@ class s_prod_KernelChannels5(torch.nn.Module):
         cs_out = product of cs along path to middle (including middle) with highest cs
         s_out = product of s along same path
         '''
-        s_roll = self.kernel_channels.kernel_channels(s)
-        cs_roll = self.kernel_channels.kernel_channels(cs)
+        s_roll = torch.nn.functional.unfold(s, 5,1,2,1).view(s.shape[0], s.shape[1], 25, s.shape[2], s.shape[3])
+        cs_roll = torch.nn.functional.unfold(s, 5,1,2,1).view(s.shape[0], s.shape[1], 25, s.shape[2], s.shape[3])
 
         s11, c11 = s * s_roll[:, :, 1 * 5 + 1, :, :], cs * cs_roll[:, :, 1 * 5 + 1, :, :]
         s12, c12 = s * s_roll[:, :, 1 * 5 + 2, :, :], cs * cs_roll[:, :, 1 * 5 + 2, :, :]

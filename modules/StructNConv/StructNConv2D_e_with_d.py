@@ -136,8 +136,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             cd_min, cd_max = retrieve_indices(cd, j_min), retrieve_indices(cd, j_max)
         
         # d_min on one side divided by d_max on the other = low value => edge in the middle
-        # clamp is needed to prevent min > max, which can happen because they originate in different regions
-        # ordinarely, this would still maintain min <= overlap <= max, but because of ^, d_min might chooes an initialized value over the true min of 0
+        # clamp is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
         d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:] + self.eps), d_max[:,:, :-2, :-2] / (d_min[:,:,2:  ,2:] + self.eps)), dim=2),        
                                                  torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_max[:,:, :-2,1:-1] / (d_min[:,:,2:  ,1:-1] + self.eps)), dim=2),
                                                  torch.stack((d_min[:,:, :-2,2:] / (d_max[:,:,2:  , :-2] + self.eps), d_max[:,:, :-2,2:] / (d_min[:,:,2:  , :-2] + self.eps)), dim=2),

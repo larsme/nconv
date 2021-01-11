@@ -228,7 +228,6 @@
     <Compile Include="dataloader\OwnDepthDataset.py" />
     <Compile Include="modules\losses.py" />
     <Compile Include="modules\NConv2D.py" />
-    <Compile Include="modules\StructNConv\KernelChannels.py" />
     <Compile Include="modules\StructNConv\NearestNeighbourUpsample2.py" />
     <Compile Include="modules\StructNConv\NearestNeighbourUpsample.py" />
     <Compile Include="modules\StructNConv\retrieve_indices.py" />
@@ -245,7 +244,6 @@
     <Compile Include="modules\StructNConv\StructNMaxPool2D_d_with_s.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_e.py" />
     <Compile Include="modules\StructNConv\StructNMaxPool2D_s.py" />
-    <Compile Include="modules\StructNConv\s_prod_KernelChannels.py" />
     <Compile Include="modules\StructNConv\e_prod_KernelChannels3.py" />
     <Compile Include="modules\StructNConv\s_prod_KernelChannels3.py" />
     <Compile Include="modules\StructNConv\e_prod_KernelChannels5.py" />
