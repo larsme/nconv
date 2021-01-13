@@ -122,49 +122,33 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         #2 => \
         #3 => |
         # dim 2 in 0 to 4
+        
+        if self.kernel_size == 5:
+            # taking the point with max confidence in a 3x3 neighbourhood can lead to both sides of an edge being represented by the same point in later steps; 
+            # treating the edge as perfectly smooth with high conf
+            # => either use different conf source, complicated conf weighted min_d and max_d as in previous versions or use a simple nconv like this:            
+            nom = F.avg_pool2d(cd * d, kernel_size=3, stride=1, padding=1)
+            cd = F.avg_pool2d(cd, kernel_size=3, stride=1, padding=1)
+            d = nom / (cd + self.eps)
+
         real_shape = d.shape
         d, cd = F.pad(d, (1,1,1,1)), F.pad(cd, (1,1,1,1))
         shape = d.shape
 
-        if self.kernel_size == 3:
-            # d on one side divided by d on the other = low value => edge in the middle
-            e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:  ] + self.eps),        
-                                              (d[:,:, :-2,1:-1] + self.eps) / (d[:,:,2:  ,1:-1] + self.eps),
-                                              (d[:,:, :-2,2:  ] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
-                                              (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
-                                 torch.stack(((d[:,:,2:  ,2:  ] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
-                                              (d[:,:,2:  ,1:-1] + self.eps) / (d[:,:, :-2,1:-1] + self.eps),
-                                              (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:  ] + self.eps),
-                                              (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
+        # d on one side divided by d on the other = low value => edge in the middle
+        e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:  ] + self.eps),        
+                                          (d[:,:, :-2,1:-1] + self.eps) / (d[:,:,2:  ,1:-1] + self.eps),
+                                          (d[:,:, :-2,2:  ] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
+                                          (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
+                             torch.stack(((d[:,:,2:  ,2:  ] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
+                                          (d[:,:,2:  ,1:-1] + self.eps) / (d[:,:, :-2,1:-1] + self.eps),
+                                          (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:  ] + self.eps),
+                                          (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
 
-            ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:  ],
-                                     cd[:,:, :-2,1:-1] * cd[:,:,2:  ,1:-1],
-                                     cd[:,:, :-2,2:  ] * cd[:,:,2:  , :-2],
-                                     cd[:,:,1:-1,2:  ] * cd[:,:,1:-1, :-2]), dim=2)
-        else:
-            _, j_max = F.max_pool2d(d * cd, kernel_size=3, stride=1, return_indices=True, padding=1)
-            _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=3, stride=1, return_indices=True, padding=1)
-            d_min, d_max = retrieve_indices(d, j_min), retrieve_indices(d, j_max)
-            cd_min, cd_max = retrieve_indices(cd, j_min), retrieve_indices(cd, j_max)
-        
-            # d_min on one side divided by d_max on the other = low value => edge in the middle
-            # clamp to 1 is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
-            d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:  ] + self.eps), d_min[:,:,2:  ,2:  ] / (d_max[:,:, :-2, :-2] + self.eps)), dim=2),        
-                                                     torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_min[:,:,2:  ,1:-1] / (d_max[:,:, :-2,1:-1] + self.eps)), dim=2),
-                                                     torch.stack((d_min[:,:, :-2,2:  ] / (d_max[:,:,2:  , :-2] + self.eps), d_min[:,:,2:  , :-2] / (d_max[:,:, :-2,2:  ] + self.eps)), dim=2),
-                                                     torch.stack((d_min[:,:,1:-1,2:  ] / (d_max[:,:,1:-1, :-2] + self.eps), d_min[:,:,1:-1, :-2] / (d_max[:,:,1:-1,2:  ] + self.eps)), dim=2)),
-                                                    dim=3),self.eps,1).pow(w_s_from_d)
-
-            c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:  ], cd_max[:,:, :-2, :-2] * cd_min[:,:,2:  ,2:  ]), dim=2),
-                                         torch.stack((cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1], cd_max[:,:, :-2,1:-1] * cd_min[:,:,2:  ,1:-1]), dim=2),
-                                         torch.stack((cd_min[:,:, :-2,2:  ] * cd_max[:,:,2:  , :-2], cd_max[:,:, :-2,2:  ] * cd_min[:,:,2:  , :-2]), dim=2),
-                                         torch.stack((cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2], cd_max[:,:,1:-1,2:  ] * cd_min[:,:,1:-1, :-2]), dim=2)), dim=3)
-        
-            # dim 2 contains d_min(side1) / d_max(side2) and d_min(side2) / d_max(side1)
-            # take the confidence weighted min of both and gather the respective items
-            j_min = torch.argmax(c_min_div_max / d_min_div_max, dim=2, keepdim=True)
-            e_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(2)
-            ce_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(2)
+        ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:  ],
+                                 cd[:,:, :-2,1:-1] * cd[:,:,2:  ,1:-1],
+                                 cd[:,:, :-2,2:  ] * cd[:,:,2:  , :-2],
+                                 cd[:,:,1:-1,2:  ] * cd[:,:,1:-1, :-2]), dim=2)
 
         # combine with previous smoothness
         e = ((self.w_prop * ce * e + 1 * ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
