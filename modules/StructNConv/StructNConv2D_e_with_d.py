@@ -138,27 +138,23 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             # regardless of which side is larger, combined confidence is the same
             ce_from_d = c_unfold[:,:,:4,:,:] * (c_unfold[:,:,5:,:,:].flip(dims=(2,)))
         else:
-            # take the confidence weighted min and max items in a 3x3 neighbourhood
-            _, j_max = F.max_pool2d(d * cd, kernel_size=3, stride=1, return_indices=True, padding=1)
-            _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=3, stride=1, return_indices=True, padding=1)
-            d_min, d_max = retrieve_indices(d, j_min), retrieve_indices(d, j_max)
-            cd_min, cd_max = retrieve_indices(cd, j_min), retrieve_indices(cd, j_max)
-        
-            # d_min on one side divided by d_max on the other = low value => edge in the middle
-            # clamp to 1 is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
-            d_min_div_max = (torch.nn.functional.unfold(d_min, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3])
-                             / (torch.nn.functional.unfold(d_max, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3])+self.eps).flip(dims=(2,)))                        
-            d_min_div_max =  torch.clamp(torch.stack((d_min_div_max[:,:,:4,:,:], d_min_div_max[:,:,5:,:,:].flip(dims=(2,))), dim=2),self.eps,1).pow(w_s_from_d)
+            # taking the point with max confidence in a 3x3 neighbourhood can lead to both sides of an edge being represented by the same point in later steps; 
+            # treating the edge as perfectly smooth with high conf
+            # => either use different conf source, complicated conf weighted min_d and max_d as in previous versions or use a simple nconv like this:            
+            nom = F.avg_pool2d(cd * d, kernel_size=3, stride=1, padding=1)
+            cd = F.avg_pool2d(cd * d, kernel_size=3, stride=1, padding=1)
+            d = nom / (cd + self.eps)
 
-            c_min_div_max = (torch.nn.functional.unfold(cd_min, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3])
-                            * torch.nn.functional.unfold(cd_max, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3]).flip(dims=(2,))) 
-            c_min_div_max = torch.stack((c_min_div_max[:,:,:4,:,:], c_min_div_max[:,:,5:,:,:].flip(dims=(2,))), dim=2)
-        
-            # dim 2 contains d_min(side1) / d_max(side2) and d_min(side2) / d_max(side1)
-            # take the confidence weighted min of both and gather the respective items
-            j_min = torch.argmax(c_min_div_max / d_min_div_max, dim=2, keepdim=True)
-            e_from_d =d_min_div_max.gather(index=j_min, dim=2).squeeze(2)
-            ce_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(2)
+            d_unfold = torch.nn.functional.unfold(d, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3])
+            c_unfold = torch.nn.functional.unfold(cd, 3,1,1,1).view(d.shape[0], d.shape[1], 9, d.shape[2], d.shape[3])
+            
+            # d on one side divided by d on the other = low value => edge in the middle
+            # if both are not equal, clamping to 1 and multiplying with return min/max   
+            d_min_div_max = torch.clamp(d_unfold / (d_unfold +self.eps).flip(dims=(2,)),0,1)                        
+            e_from_d = d_min_div_max[:,:,:4,:,:] * d_min_div_max[:,:,5:,:,:].flip(dims=(2,))
+
+            # regardless of which side is larger, combined confidence is the same
+            ce_from_d = c_unfold[:,:,:4,:,:] * (c_unfold[:,:,5:,:,:].flip(dims=(2,)))
 
         # combine with previous smoothness
         e = ((self.w_prop * ce * e + 1 * ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
