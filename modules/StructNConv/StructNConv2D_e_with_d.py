@@ -127,31 +127,44 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         shape = d.shape
 
         if self.kernel_size == 3:
-            d_min = d_max = d
-            cd_min = cd_max = cd
+            # d on one side divided by d on the other = low value => edge in the middle
+            e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:  ] + self.eps),        
+                                              (d[:,:, :-2,1:-1] + self.eps) / (d[:,:,2:  ,1:-1] + self.eps),
+                                              (d[:,:, :-2,2:  ] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
+                                              (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
+                                 torch.stack(((d[:,:,2:  ,2:  ] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
+                                              (d[:,:,2:  ,1:-1] + self.eps) / (d[:,:, :-2,1:-1] + self.eps),
+                                              (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:  ] + self.eps),
+                                              (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
+
+            ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:  ],
+                                     cd[:,:, :-2,1:-1] * cd[:,:,2:  ,1:-1],
+                                     cd[:,:, :-2,2:  ] * cd[:,:,2:  , :-2],
+                                     cd[:,:,1:-1,2:  ] * cd[:,:,1:-1, :-2]), dim=2)
         else:
             _, j_max = F.max_pool2d(d * cd, kernel_size=3, stride=1, return_indices=True, padding=1)
             _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=3, stride=1, return_indices=True, padding=1)
             d_min, d_max = retrieve_indices(d, j_min), retrieve_indices(d, j_max)
             cd_min, cd_max = retrieve_indices(cd, j_min), retrieve_indices(cd, j_max)
         
-        # d_min on one side divided by d_max on the other = low value => edge in the middle
-        # clamp is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
-        d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:] + self.eps), d_max[:,:, :-2, :-2] / (d_min[:,:,2:  ,2:] + self.eps)), dim=2),        
-                                                 torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_max[:,:, :-2,1:-1] / (d_min[:,:,2:  ,1:-1] + self.eps)), dim=2),
-                                                 torch.stack((d_min[:,:, :-2,2:] / (d_max[:,:,2:  , :-2] + self.eps), d_max[:,:, :-2,2:] / (d_min[:,:,2:  , :-2] + self.eps)), dim=2),
-                                                 torch.stack((d_min[:,:,1:-1,2:] / (d_max[:,:,1:-1, :-2] + self.eps), d_max[:,:,1:-1,2:] / (d_min[:,:,1:-1, :-2] + self.eps)), dim=2)),
-                                                dim=3),self.eps,1).pow(w_s_from_d)
+            # d_min on one side divided by d_max on the other = low value => edge in the middle
+            # clamp to 1 is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
+            d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:  ] + self.eps), d_min[:,:,2:  ,2:  ] / (d_max[:,:, :-2, :-2] + self.eps)), dim=2),        
+                                                     torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_min[:,:,2:  ,1:-1] / (d_max[:,:, :-2,1:-1] + self.eps)), dim=2),
+                                                     torch.stack((d_min[:,:, :-2,2:  ] / (d_max[:,:,2:  , :-2] + self.eps), d_min[:,:,2:  , :-2] / (d_max[:,:, :-2,2:  ] + self.eps)), dim=2),
+                                                     torch.stack((d_min[:,:,1:-1,2:  ] / (d_max[:,:,1:-1, :-2] + self.eps), d_min[:,:,1:-1, :-2] / (d_max[:,:,1:-1,2:  ] + self.eps)), dim=2)),
+                                                    dim=3),self.eps,1).pow(w_s_from_d)
 
-        c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:], cd_max[:,:, :-2, :-2] * cd_min[:,:,2:  ,2:]), dim=2),
-                                     torch.stack((cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1], cd_max[:,:, :-2,1:-1] * cd_min[:,:,2:  ,1:-1]), dim=2),
-                                     torch.stack((cd_min[:,:, :-2,2:] * cd_max[:,:,2:  , :-2], cd_max[:,:, :-2,2:] * cd_min[:,:,2:  , :-2]), dim=2),
-                                     torch.stack((cd_min[:,:,1:-1,2:] * cd_max[:,:,1:-1, :-2], cd_max[:,:,1:-1,2:] * cd_min[:,:,1:-1, :-2]), dim=2)), dim=3)
+            c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:  ], cd_max[:,:, :-2, :-2] * cd_min[:,:,2:  ,2:  ]), dim=2),
+                                         torch.stack((cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1], cd_max[:,:, :-2,1:-1] * cd_min[:,:,2:  ,1:-1]), dim=2),
+                                         torch.stack((cd_min[:,:, :-2,2:  ] * cd_max[:,:,2:  , :-2], cd_max[:,:, :-2,2:  ] * cd_min[:,:,2:  , :-2]), dim=2),
+                                         torch.stack((cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2], cd_max[:,:,1:-1,2:  ] * cd_min[:,:,1:-1, :-2]), dim=2)), dim=3)
         
-        j_min = torch.argmax(c_min_div_max / d_min_div_max, dim=2, keepdim=True)
-
-        e_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(2)
-        ce_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(2)
+            # dim 2 contains d_min(side1) / d_max(side2) and d_min(side2) / d_max(side1)
+            # take the confidence weighted min of both and gather the respective items
+            j_min = torch.argmax(c_min_div_max / d_min_div_max, dim=2, keepdim=True)
+            e_from_d = d_min_div_max.gather(index=j_min, dim=2).squeeze(2)
+            ce_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(2)
 
         # combine with previous smoothness
         e = ((self.w_prop * ce * e + 1 * ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
