@@ -41,11 +41,11 @@ class StructNDeconv2D_e(torch.nn.Module):
         # Init Parameters
         if self.init_method == 'x':  # Xavier
             if mirror_weights:
-               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight0)
+               torch.nn.init.xavier_uniform_(self.spatial_weight1)
+               torch.nn.init.xavier_uniform_(self.spatial_weight3)
             else:
-               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight)
         else:  # elif self.init_method == 'k': # Kaiming
             if mirror_weights:
                torch.nn.init.kaiming_uniform_(self.spatial_weight0)
@@ -53,12 +53,6 @@ class StructNDeconv2D_e(torch.nn.Module):
                torch.nn.init.kaiming_uniform_(self.spatial_weight3)
             else:
                 torch.nn.init.kaiming_uniform_(self.spatial_weight)
-        if mirror_weights:
-            self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight3.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-        else:
-            self.spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
 
             
     def enforce_limits(self):

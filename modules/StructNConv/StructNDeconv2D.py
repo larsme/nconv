@@ -38,7 +38,7 @@ class StructNDeconv2D(torch.nn.Module):
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+            torch.nn.init.xavier_uniform_(spatial_weight)
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(spatial_weight)
         

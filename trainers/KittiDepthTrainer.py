@@ -357,7 +357,8 @@ class KittiDepthTrainer(Trainer):
                     if s == 'train':
                         loss.backward()
                         self.optimizer.step()
-                    self.optimizer.zero_grad()
+                    for param in self.net.parameters():
+                        param.grad = None
 
 
                     self.net.enforce_limits()

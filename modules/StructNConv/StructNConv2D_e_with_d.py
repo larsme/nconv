@@ -35,29 +35,29 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         # Define Parameters
         self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1, 1))
         if mirror_weights:
-            self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 5, 1, 1))
+            self.w_e_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 5, 1, 1))
             self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, self.kernel_size))
             self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
             self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.out_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 10))
         else:
-            self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 2, 4, 1, 1))
+            self.w_e_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 2, 4, 1, 1))
             self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels * 4, 1, self.kernel_size, self.kernel_size))
             self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels * 4, self.in_channels * 4, 1, 1))
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.w_s_from_d) + 2
-            torch.nn.init.xavier_uniform_(self.w_prop) + 1
-            torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            torch.nn.init.xavier_uniform_(self.w_e_from_d)
+            torch.nn.init.xavier_uniform_(self.w_prop)
+            torch.nn.init.xavier_uniform_(self.channel_weight)
             if mirror_weights:
-               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight0)
+               torch.nn.init.xavier_uniform_(self.spatial_weight1)
+               torch.nn.init.xavier_uniform_(self.spatial_weight3)
             else:
-               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight)
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.w_s_from_d) + 1
+            torch.nn.init.kaiming_uniform_(self.w_e_from_d)
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             if mirror_weights:
@@ -66,12 +66,6 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                torch.nn.init.kaiming_uniform_(self.spatial_weight3)
             else:
                 torch.nn.init.kaiming_uniform_(self.spatial_weight)
-        if mirror_weights:
-            self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight3.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-        else:
-            self.spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
 
             
     def enforce_limits(self):
@@ -84,7 +78,7 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
         self.w_prop.data = F.softplus(self.w_prop, beta=10)
-        self.w_s_from_d.data = F.softplus(self.w_s_from_d, beta=10)
+        self.w_e_from_d.data = F.softplus(self.w_e_from_d, beta=10)
 
 
     def forward(self, d, cd, e, ce):
@@ -104,14 +98,14 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                                           torch.stack((self.channel_weight[:,:,2], self.channel_weight[:,:,1], self.channel_weight[:,:,0], self.channel_weight[:,:,3]), dim = 1),
                                           torch.stack((self.channel_weight[:,:,7], self.channel_weight[:,:,8], self.channel_weight[:,:,7], self.channel_weight[:,:,9]), dim = 1)), 
                                          dim=3).view(self.out_channels * 4, self.in_channels * 4, 1, 1)
-            w_s_from_d = torch.stack((torch.stack((self.w_s_from_d[:,:,0], self.w_s_from_d[:,:,1]), dim=2),
-                                      torch.stack((self.w_s_from_d[:,:,2], self.w_s_from_d[:,:,3]), dim=2),
-                                      torch.stack((self.w_s_from_d[:,:,1], self.w_s_from_d[:,:,0]), dim=2),
-                                      torch.stack((self.w_s_from_d[:,:,4], self.w_s_from_d[:,:,4]), dim=2)), dim=3)
+            w_s_from_d = torch.stack((torch.stack((self.w_e_from_d[:,:,0], self.w_e_from_d[:,:,1]), dim=2),
+                                      torch.stack((self.w_e_from_d[:,:,2], self.w_e_from_d[:,:,3]), dim=2),
+                                      torch.stack((self.w_e_from_d[:,:,1], self.w_e_from_d[:,:,0]), dim=2),
+                                      torch.stack((self.w_e_from_d[:,:,4], self.w_e_from_d[:,:,4]), dim=2)), dim=3)
         else:
             spatial_weight = self.spatial_weight
             channel_weight = self.channel_weight
-            w_s_from_d = self.w_s_from_d
+            w_s_from_d = self.w_e_from_d
 
 
 
@@ -136,14 +130,15 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         shape = d.shape
 
         # d on one side divided by d on the other = low value => edge in the middle
+        # clamp_max should not actually do anything, since the smaller side is always <= 1, but without it the exponent's gradient becomes nan once its high enough
         e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:  ] + self.eps),        
                                           (d[:,:, :-2,1:-1] + self.eps) / (d[:,:,2:  ,1:-1] + self.eps),
                                           (d[:,:, :-2,2:  ] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
-                                          (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
+                                          (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).clamp_max(1).pow(w_s_from_d[:,:,0,:,:,:]),
                              torch.stack(((d[:,:,2:  ,2:  ] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
                                           (d[:,:,2:  ,1:-1] + self.eps) / (d[:,:, :-2,1:-1] + self.eps),
                                           (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:  ] + self.eps),
-                                          (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
+                                          (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).clamp_max(1).pow(w_s_from_d[:,:,1,:,:,:]))
 
         ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:  ],
                                  cd[:,:, :-2,1:-1] * cd[:,:,2:  ,1:-1],
@@ -151,8 +146,8 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                                  cd[:,:,1:-1,2:  ] * cd[:,:,1:-1, :-2]), dim=2)
 
         # combine with previous smoothness
-        e = ((self.w_prop * ce * e + 1 * ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
-        ce = ((self.w_prop * ce + 1 * ce_from_d) / (self.w_prop + 1)).view(real_shape[0],-1,real_shape[2], real_shape[3])
+        e = ((self.w_prop * ce * e + ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
+        ce = ((self.w_prop * ce + ce_from_d) / (self.w_prop + 1)).view(real_shape[0],-1,real_shape[2], real_shape[3])
 
         # Normalized Convolution along channel dimensions
         nom = F.conv2d(ce * e, channel_weight, groups=self.groups)

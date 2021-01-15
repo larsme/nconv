@@ -47,16 +47,12 @@ class StructNConv2D_d(torch.nn.Module):
         # Init Parameters
         if 'x' in self.init_method:  # Xavier
             if self.in_channels > 1:
-                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
-            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+                torch.nn.init.xavier_uniform_(self.channel_weight)
+            torch.nn.init.xavier_uniform_(spatial_weight)
         elif 'k' in self.init_method: # Kaiming
             if self.in_channels > 1:
                 torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(spatial_weight)
-        if 'n' in self.init_method and mirror_weights != 2:
-            spatial_weight.data[-1,:, self.kernel_size // 2, self.kernel_size // 2] = 3
-            if in_channels > 1:
-                spatial_weight.data[-1,:,:,:] = 1
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
