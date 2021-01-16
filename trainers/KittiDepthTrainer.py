@@ -356,6 +356,15 @@ class KittiDepthTrainer(Trainer):
                     # backward + optimize only if in training phase
                     if s == 'train':
                         loss.backward()
+                        for param in self.net.parameters():
+                            if not torch.isfinite(param.grad).all():
+                                self.optimizer.zero_grad()
+                                loss = d = cd = None
+                                d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                                loss = self.objective(d, gt_depth, cd, self.epoch)
+                                print('found nan in grad of')
+                                print(param)
+                                return
                         self.optimizer.step()
                     for param in self.net.parameters():
                         param.grad = None

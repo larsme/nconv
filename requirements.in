@@ -1,5 +1,5 @@
  -f https://download.pytorch.org/whl/torch_stable.html
-torch
+torch===1.7.1+cu110
 pip-tools
 Pillow
 numpy
