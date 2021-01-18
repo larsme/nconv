@@ -120,8 +120,8 @@
 
 ::python run_nconv_cnn.py  -mode traineval -network_file Unguided_d -ws_path workspace/StructNConv/Unguided_d -params_sub_dir Experiments/Xavier_nI_nb_m_1c_pS -exp_subdir 1
 
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/simplify_e_from_d -exp_subdir 1 -evaluate_all_epochs true
-python run_nconv_cnn.py  -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/simplify_e_from_d -exp_subdir 2 -evaluate_all_epochs true
+python run_nconv_cnn.py  -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/simplify_d_with_e -exp_subdir 1 -evaluate_all_epochs true
+python run_nconv_cnn.py  -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/simplify_d_with_e -exp_subdir 2 -evaluate_all_epochs true
 ::python run_nconv_cnn.py  -mode traineval -network_file Unguided_de2 -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/sep_pow_smoothl1_rec -exp_subdir 2 -evaluate_all_epochs true
 
 
