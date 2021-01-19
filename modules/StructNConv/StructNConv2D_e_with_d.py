@@ -47,17 +47,17 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.w_s_from_d) + 2
-            torch.nn.init.xavier_uniform_(self.w_prop) + 1
-            torch.nn.init.xavier_uniform_(self.channel_weight) + 1
+            torch.nn.init.xavier_uniform_(self.w_s_from_d)
+            torch.nn.init.xavier_uniform_(self.w_prop) 
+            torch.nn.init.xavier_uniform_(self.channel_weight) 
             if mirror_weights:
-               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight0) 
+               torch.nn.init.xavier_uniform_(self.spatial_weight1) 
+               torch.nn.init.xavier_uniform_(self.spatial_weight3) 
             else:
-               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight) 
         else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.w_s_from_d) + 1
+            torch.nn.init.kaiming_uniform_(self.w_s_from_d) 
             torch.nn.init.kaiming_uniform_(self.w_prop)
             torch.nn.init.kaiming_uniform_(self.channel_weight)
             if mirror_weights:
@@ -66,12 +66,6 @@ class StructNConv2D_e_with_d(torch.nn.Module):
                torch.nn.init.kaiming_uniform_(self.spatial_weight3)
             else:
                 torch.nn.init.kaiming_uniform_(self.spatial_weight)
-        if mirror_weights:
-            self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight3.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-        else:
-            self.spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
 
             
     def enforce_limits(self):
@@ -83,11 +77,37 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
-        self.w_prop.data = F.softplus(self.w_prop, beta=10)
         self.w_s_from_d.data = F.softplus(self.w_s_from_d, beta=10)
+        self.w_prop.data = F.softplus(self.w_prop, beta=10)
+        
+    def print(self, s_list):
+        spatial_weight, channel_weight, w_s_from_d, w_prop = self.prepare_weights()
 
+        for dir in range(4):
+            for x in range(self.kernel_size):
+                for y in range(self.kernel_size):
+                    s_list[y + dir * 6] += '{0:0.2f}, '.format(spatial_weight[dir,0,y,x].item())
 
-    def forward(self, d, cd, e, ce):
+        idx = 4 * 6 + 1
+        for channel in range(self.in_channels):
+            for dir in range(4):
+                for d2 in range(4):
+                    s_list[dir + idx+channel*5] += '{0:0.2f}, '.format(channel_weight[dir,channel*4+d2,0, 0].item())
+
+        idx += 10
+        for channel in range(self.in_channels):
+            for dir in range(4):
+                for side in range(2):
+                    s_list[idx+dir+channel*5] += '{0:0.2f}, '.format(w_s_from_d[0,channel,side,dir].item())
+
+        idx += 10
+
+        for channel in range(self.in_channels):
+            s_list[idx+channel] += '{0:0.2f}, '.format(torch.sigmoid(w_prop[0, channel, 0,0]).item())
+
+        return s_list
+
+    def prepare_weights(self):
         if self.mirror_weights:
             spatial_weight = torch.cat((self.spatial_weight0,
                                         torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
@@ -112,8 +132,15 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             spatial_weight = self.spatial_weight
             channel_weight = self.channel_weight
             w_s_from_d = self.w_s_from_d
+        spatial_weight = spatial_weight / spatial_weight.sum(dim=[2,3], keepdim=True)
+        channel_weight = channel_weight / channel_weight.sum(dim=1, keepdim=True)
+        w_prop = self.w_prop / (1+self.w_prop)
+
+        return spatial_weight, channel_weight, w_s_from_d, w_prop
 
 
+    def forward(self, d, cd, e, ce):
+        spatial_weight, channel_weight, w_s_from_d, w_prop = self.prepare_weights()
 
         # calculate smoothness from depths
         #edges:
@@ -128,19 +155,19 @@ class StructNConv2D_e_with_d(torch.nn.Module):
 
         if self.kernel_size == 3:
             # d on one side divided by d on the other = low value => edge in the middle
-            e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:  ] + self.eps),        
+            e_from_d = torch.min(torch.stack(((d[:,:, :-2, :-2] + self.eps) / (d[:,:,2:  ,2:] + self.eps),        
                                               (d[:,:, :-2,1:-1] + self.eps) / (d[:,:,2:  ,1:-1] + self.eps),
-                                              (d[:,:, :-2,2:  ] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
-                                              (d[:,:,1:-1,2:  ] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
-                                 torch.stack(((d[:,:,2:  ,2:  ] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
+                                              (d[:,:, :-2,2:] + self.eps) / (d[:,:,2:  , :-2] + self.eps),
+                                              (d[:,:,1:-1,2:] + self.eps) / (d[:,:,1:-1, :-2] + self.eps)), dim=2).pow(w_s_from_d[:,:,0,:,:,:]),
+                                 torch.stack(((d[:,:,2:  ,2:] + self.eps) / (d[:,:, :-2, :-2] + self.eps),        
                                               (d[:,:,2:  ,1:-1] + self.eps) / (d[:,:, :-2,1:-1] + self.eps),
-                                              (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:  ] + self.eps),
-                                              (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:  ] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
+                                              (d[:,:,2:  , :-2] + self.eps) / (d[:,:, :-2,2:] + self.eps),
+                                              (d[:,:,1:-1, :-2] + self.eps) / (d[:,:,1:-1,2:] + self.eps)), dim=2).pow(w_s_from_d[:,:,1,:,:,:]))
 
-            ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:  ],
+            ce_from_d = torch.stack((cd[:,:, :-2, :-2] * cd[:,:,2:  ,2:],
                                      cd[:,:, :-2,1:-1] * cd[:,:,2:  ,1:-1],
-                                     cd[:,:, :-2,2:  ] * cd[:,:,2:  , :-2],
-                                     cd[:,:,1:-1,2:  ] * cd[:,:,1:-1, :-2]), dim=2)
+                                     cd[:,:, :-2,2:] * cd[:,:,2:  , :-2],
+                                     cd[:,:,1:-1,2:] * cd[:,:,1:-1, :-2]), dim=2)
         else:
             _, j_max = F.max_pool2d(d * cd, kernel_size=3, stride=1, return_indices=True, padding=1)
             _, j_min = F.max_pool2d(cd / (d + self.eps), kernel_size=3, stride=1, return_indices=True, padding=1)
@@ -149,16 +176,16 @@ class StructNConv2D_e_with_d(torch.nn.Module):
         
             # d_min on one side divided by d_max on the other = low value => edge in the middle
             # clamp to 1 is needed to prevent min > max, which can happen with confidence weighting because they originate in different regions
-            d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:  ] + self.eps), d_min[:,:,2:  ,2:  ] / (d_max[:,:, :-2, :-2] + self.eps)), dim=2),        
+            d_min_div_max = torch.clamp(torch.stack((torch.stack((d_min[:,:, :-2, :-2] / (d_max[:,:,2:  ,2:] + self.eps), d_min[:,:,2:  ,2:] / (d_max[:,:, :-2, :-2] + self.eps)), dim=2),        
                                                      torch.stack((d_min[:,:, :-2,1:-1] / (d_max[:,:,2:  ,1:-1] + self.eps), d_min[:,:,2:  ,1:-1] / (d_max[:,:, :-2,1:-1] + self.eps)), dim=2),
-                                                     torch.stack((d_min[:,:, :-2,2:  ] / (d_max[:,:,2:  , :-2] + self.eps), d_min[:,:,2:  , :-2] / (d_max[:,:, :-2,2:  ] + self.eps)), dim=2),
-                                                     torch.stack((d_min[:,:,1:-1,2:  ] / (d_max[:,:,1:-1, :-2] + self.eps), d_min[:,:,1:-1, :-2] / (d_max[:,:,1:-1,2:  ] + self.eps)), dim=2)),
+                                                     torch.stack((d_min[:,:, :-2,2:] / (d_max[:,:,2:  , :-2] + self.eps), d_min[:,:,2:  , :-2] / (d_max[:,:, :-2,2:] + self.eps)), dim=2),
+                                                     torch.stack((d_min[:,:,1:-1,2:] / (d_max[:,:,1:-1, :-2] + self.eps), d_min[:,:,1:-1, :-2] / (d_max[:,:,1:-1,2:] + self.eps)), dim=2)),
                                                     dim=3),self.eps,1).pow(w_s_from_d)
 
-            c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:  ], cd_max[:,:, :-2, :-2] * cd_min[:,:,2:  ,2:  ]), dim=2),
+            c_min_div_max = torch.stack((torch.stack((cd_min[:,:, :-2, :-2] * cd_max[:,:,2:  ,2:], cd_max[:,:, :-2, :-2] * cd_min[:,:,2:  ,2:]), dim=2),
                                          torch.stack((cd_min[:,:, :-2,1:-1] * cd_max[:,:,2:  ,1:-1], cd_max[:,:, :-2,1:-1] * cd_min[:,:,2:  ,1:-1]), dim=2),
-                                         torch.stack((cd_min[:,:, :-2,2:  ] * cd_max[:,:,2:  , :-2], cd_max[:,:, :-2,2:  ] * cd_min[:,:,2:  , :-2]), dim=2),
-                                         torch.stack((cd_min[:,:,1:-1,2:  ] * cd_max[:,:,1:-1, :-2], cd_max[:,:,1:-1,2:  ] * cd_min[:,:,1:-1, :-2]), dim=2)), dim=3)
+                                         torch.stack((cd_min[:,:, :-2,2:] * cd_max[:,:,2:  , :-2], cd_max[:,:, :-2,2:] * cd_min[:,:,2:  , :-2]), dim=2),
+                                         torch.stack((cd_min[:,:,1:-1,2:] * cd_max[:,:,1:-1, :-2], cd_max[:,:,1:-1,2:] * cd_min[:,:,1:-1, :-2]), dim=2)), dim=3)
         
             # dim 2 contains d_min(side1) / d_max(side2) and d_min(side2) / d_max(side1)
             # take the confidence weighted min of both and gather the respective items
@@ -167,20 +194,18 @@ class StructNConv2D_e_with_d(torch.nn.Module):
             ce_from_d = c_min_div_max.gather(index=j_min, dim=2).squeeze(2)
 
         # combine with previous smoothness
-        e = ((self.w_prop * ce * e + 1 * ce_from_d * e_from_d) / (self.w_prop * ce + 1 * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
-        ce = ((self.w_prop * ce + 1 * ce_from_d) / (self.w_prop + 1)).view(real_shape[0],-1,real_shape[2], real_shape[3])
+        e = ((w_prop * ce * e + (1 - w_prop) * ce_from_d * e_from_d) / (w_prop * ce + (1 - w_prop) * ce_from_d + self.eps)).view(real_shape[0],-1,real_shape[2], real_shape[3])
+        ce = (w_prop * ce + (1 - w_prop) * ce_from_d).view(real_shape[0],-1,real_shape[2], real_shape[3])
 
         # Normalized Convolution along channel dimensions
         nom = F.conv2d(ce * e, channel_weight, groups=self.groups)
-        denom = F.conv2d(ce, channel_weight, groups=self.groups)
-        e = (nom / (denom + self.eps))
-        ce = (denom / (torch.sum(channel_weight) + self.eps))
+        ce = F.conv2d(ce, channel_weight, groups=self.groups)
+        e = (nom / (ce + self.eps))
 
         
         # Normalized Convolution along spatial dimensions
         nom = F.conv2d(ce * e, spatial_weight, groups=self.out_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
-        denom = F.conv2d(ce, spatial_weight, groups=self.out_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
-        e = nom / (denom + self.eps)
-        ce = denom / (torch.sum(spatial_weight) + self.eps)
+        ce = F.conv2d(ce, spatial_weight, groups=self.out_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation).view(real_shape[0], self.out_channels, 4, real_shape[2], real_shape[3])
+        e = nom / (ce + self.eps)
 
         return e, ce

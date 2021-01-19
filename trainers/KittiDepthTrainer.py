@@ -146,6 +146,7 @@ class KittiDepthTrainer(Trainer):
                     print('Evaluating using initial parameters')
 
         self.net.train(False)
+        self.net.print()
         
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         
@@ -199,7 +200,7 @@ class KittiDepthTrainer(Trainer):
 
                             depth_img = cmap[np.ndarray.astype(np.interp(sparse_depth, (q1_lidar, q2_lidar), (0, 255)), np.int_),
                                         :]  # depths
-                            depth_img[sparse_depth==0,:] = 128
+                            depth_img[sparse_depth == 0,:] = 128
 
                             img_sparse_depth = Image.fromarray(depth_img)
                             ax[0][0].imshow(img_sparse_depth)
@@ -208,7 +209,7 @@ class KittiDepthTrainer(Trainer):
                             cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
 
                             depth_img = cmap[np.ndarray.astype(np.interp(d, (q1_lidar, q2_lidar), (0, 255)), np.int_), :]
-                            depth_img[cd==0,:] = 128
+                            depth_img[cd == 0,:] = 128
                             img_pred_depth = Image.fromarray(depth_img)
                             ax[1][0].imshow(img_pred_depth)
 
@@ -217,18 +218,18 @@ class KittiDepthTrainer(Trainer):
                             cmap = np.ndarray.astype(np.array([cmap(i) for i in range(256)])[:, :3] * 255, np.uint8)
                     
                             c_img = cmap[np.ndarray.astype(np.interp(cd / np.max(cd), (0, 1), (0, 255)), np.int_), :] 
-                            c_img[cd==0,:] = 128
+                            c_img[cd == 0,:] = 128
                             img_pred_c = Image.fromarray(c_img)
                             ax[1][1].imshow(img_pred_c)
                         
                             if len(outs) > 2:
                                 s_img = cmap[np.ndarray.astype(np.interp(s, (0, 1), (0, 255)), np.int_), :]
-                                s_img[cs==0,:] = 128
+                                s_img[cs == 0,:] = 128
                                 img_pred_s = Image.fromarray(s_img)
                                 ax[2][0].imshow(img_pred_s)
 
                                 cs_img = cmap[np.ndarray.astype(np.interp(cs / np.max(cs), (0, 1), (0, 255)), np.int_),:]
-                                cs_img[cs==0,:] = 128
+                                cs_img[cs == 0,:] = 128
                                 img_pred_cs = Image.fromarray(cs_img)
                                 ax[2][1].imshow(img_pred_cs)
 
@@ -356,8 +357,12 @@ class KittiDepthTrainer(Trainer):
                     # backward + optimize only if in training phase
                     if s == 'train':
                         loss.backward()
+                        for param in self.net.parameters():
+                            if param.grad is None:
+                                print(param)
                         self.optimizer.step()
-                    self.optimizer.zero_grad()
+                    for param in self.net.parameters():
+                        param.grad = None
 
 
                     self.net.enforce_limits()

@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <CommandLineArguments> -mode traineval -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/sep_pow_smoothl1_default_init -exp_subdir 1 -evaluate_all_epochs true</CommandLineArguments>
+    <CommandLineArguments> -mode display -network_file Unguided_de -ws_path workspace/StructNConv/Unguided_de -params_sub_dir Experiments/bugfix_3 -exp_subdir 1 -evaluate_all_epochs true</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -261,17 +261,6 @@
     <Compile Include="workspace\StructNConv\Unguided_d\Unguided_d.py" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include="env\">
-      <Id>env</Id>
-      <Version>3.7</Version>
-      <Description>env (Python 3.7 (64-bit))</Description>
-      <InterpreterPath>Scripts\python.exe</InterpreterPath>
-      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
-      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
-      <Architecture>X64</Architecture>
-    </Interpreter>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="dataloader\" />
     <Folder Include="modules\" />
     <Folder Include="modules\StructNConv\" />
@@ -416,6 +405,17 @@
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments_old\Xavier_no_bias_stride_no_devalue\2\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments_old\Xavier_no_bias_stride_no_devalue\3\" />
     <Folder Include="workspace\StructNConv\Unguided_d\Experiments_old\Xavier_no_bias_stride_no_devalue\4\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>env</Id>
+      <Version>3.7</Version>
+      <Description>env (Python 3.7 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

@@ -122,8 +122,70 @@ class CNN(torch.nn.Module):
         self.npool_e.enforce_limits()
         self.nup_e.enforce_limits()
     
+    def print(self):
+        s = 'nconv_d\n'
+        s+= 'spatial\n'
+        s_list = []
+        for i in range(5):
+            s_list.append('')
+        for nconv_d in self.nconv_d:
+            s_list2 = []
+            for i in range(5):
+                s_list2.append('')
+            s_list2= nconv_d.print(s_list2)
+            for i in range(5):
+                s_list[i] += '{:<30}'.format(s_list2[i]) + '| '
+        for i in range(5):
+            s+= s_list[i]+'\n'
+        s+='\n'
+
+        s+='nconv_e\n'
+        title_rows = set()
+        s_list = []
+        for i in range(4):
+            title_rows.add(len(s_list))
+            s_list.append('spatial {0}\n'.format(['/','-','\\','|'][i]))
+            for j in range(5):
+                s_list.append('') 
+                
+        title_rows.add(len(s_list))
+        s_list.append('channel_weights prev / - \\ | to  / - \\ |')
+        for dir in range(4):
+            s_list.append('')
+        title_rows.add(len(s_list))
+        s_list.append('channel_weights skip / - \\ | to  / - \\ |')
+        for dir in range(4):
+            s_list.append('')
+            
+        title_rows.add(len(s_list))
+        s_list.append('pow for prev / - \\ | per side')
+        for dir in range(4):
+            s_list.append('')
+        title_rows.add(len(s_list))
+        s_list.append('pow for skip / - \\ | per side')
+        for dir in range(4):
+            s_list.append('')
+            
+        title_rows.add(len(s_list))
+        s_list.append('w prop (prev, skip)')
+        for dir in range(2):
+            s_list.append('')
+
+        for nconv_e in self.nconv_e:
+            s_list2 = []
+            for i in range(len(s_list)):
+                s_list2.append('')
+            s_list2= nconv_e.print(s_list2)
+            for i in range(len(s_list2)):
+                if i not in title_rows:
+                    s_list[i] += '{:<30}'.format(s_list2[i]) + '| '
+        for i in range(len(s_list)):
+            s+= s_list[i]+'\n'
+        print(s)
+
+
     
-    def forward(self, d_0, cd_0, e_0=None, ce_0 = None):
+    def forward(self, d_0, cd_0, e_0=None, ce_0=None):
         if e_0 is None:
             e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device)        
 

@@ -45,17 +45,16 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         # Init Parameters
         if self.init_method == 'x':  # Xavier
             torch.nn.init.xavier_uniform_(self.w_s_from_d)
-            torch.nn.init.xavier_uniform_(self.w_prop)+1
+            torch.nn.init.xavier_uniform_(self.w_prop)
             if self.in_channels > 1:
-                torch.nn.init.xavier_uniform_(self.channel_weight) + 1
-            torch.nn.init.xavier_uniform_(spatial_weight) + 1
+                torch.nn.init.xavier_uniform_(self.channel_weight) 
+            torch.nn.init.xavier_uniform_(spatial_weight) 
         else:  # elif self.init_method == 'k': # Kaiming
             torch.nn.init.kaiming_uniform_(self.w_s_from_d)
             torch.nn.init.kaiming_uniform_(self.w_prop)
             if self.in_channels > 1:
                 torch.nn.init.kaiming_uniform_(self.channel_weight)
             torch.nn.init.kaiming_uniform_(spatial_weight)
-        spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
         
         if mirror_weights:
             self.true_spatial_weight = spatial_weight
@@ -71,15 +70,22 @@ class StructNConv2D_s_with_d(torch.nn.Module):
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
         if self.in_channels > 1:
             self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
-        self.w_prop.data = F.softplus(self.w_prop, beta=10)
-        self.w_s_from_d.data = torch.clamp(self.w_s_from_d, -1, 1)
 
-
-    def forward(self, d, cd, s, cs):
+    def prepare_weights(self):
         if self.mirror_weights:
             spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
         else:
             spatial_weight = self.spatial_weight
+        spatial_weight = spatial_weight / spatial_weight.sum(dim=[2,3], keepdim=True)
+        w_prop = torch.sigmoid(self.w_prop)
+
+        if self.in_channels > 1:
+            channel_weight = self.channel_weight / self.channel_weight.sum(dim=1, keepdim=True)
+
+        return spatial_weight, channel_weight, w_prop
+
+    def forward(self, d, cd, s, cs):
+        spatial_weight, channel_weight, w_prop = self.prepare_weights()
 
         # calculate smoothness from depths
         _, j_max = F.max_pool2d(d * cd, kernel_size=self.kernel_size, stride=self.stride,
@@ -89,12 +95,12 @@ class StructNConv2D_s_with_d(torch.nn.Module):
 
         min_div_max = retrieve_indices(d, j_min) / (retrieve_indices(d, j_max) + self.eps)
 
-        s_from_d = (1 - self.w_s_from_d) * min_div_max + self.w_s_from_d * min_div_max ** 2
+        s_from_d = min_div_max.pow(self.w_s_from_d)
         cs_from_d = retrieve_indices(cd, j_max) * retrieve_indices(cd, j_min)
 
         if self.stride == 1:
-            s_prop = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)
-            cs_prop = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
+            s_prop = (w_prop * cs * s + (1 - w_prop) * cs_from_d * s_from_d) / (w_prop * cs + (1 - w_prop) * cs_from_d + self.eps)
+            cs_prop = (w_prop * cs + (1 - w_prop) * cs_from_d)
         else:
             s_prop = s
             cs_prop = cs
@@ -102,23 +108,21 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         # Normalized Convolution along spatial dimensions
         nom = F.conv2d(cs_prop * s_prop, spatial_weight, groups=self.in_channels, stride=self.stride,
                         padding=self.padding, dilation=self.dilation).squeeze(2)
-        denom = F.conv2d(cs_prop, spatial_weight, groups=self.in_channels, stride=self.stride,
+        cs = F.conv2d(cs_prop, spatial_weight, groups=self.in_channels, stride=self.stride,
                             padding=self.padding, dilation=self.dilation).squeeze(2)
-        s = nom / (denom + self.eps)
-        cs = denom / (torch.sum(spatial_weight) + self.eps)
+        s = nom / (cs + self.eps)
         
         if self.in_channels > 1:
             # Normalized Convolution along channel dimensions
             nom = F.conv2d(cs * s, self.channel_weight, groups=self.groups)
-            denom = F.conv2d(cs, self.channel_weight, groups=self.groups)
-            s = nom / (denom + self.eps)
-            cs = denom / (torch.sum(self.channel_weight) + self.eps)
+            cs = F.conv2d(cs, self.channel_weight, groups=self.groups)
+            s = nom / (cs + self.eps)
         elif self.out_channels > 1:
             s, cs = s.expand(-1, self.out_channels,-1,-1), cs.expand(-1, self.out_channels,-1,-1)
 
         if self.stride > 1:
-            s = (self.w_prop * cs * s + 1 * cs_from_d * s_from_d) / (self.w_prop * cs + 1 * cs_from_d + self.eps)
-            cs = (self.w_prop * cs + 1 * cs_from_d) / (self.w_prop + 1)
+            s = (w_prop * cs * s + (1 - w_prop) * cs_from_d * s_from_d) / (w_prop * cs + (1 - w_prop) * cs_from_d + self.eps)
+            cs = (w_prop * cs + (1 - w_prop) * cs_from_d)
             
             return s, cs * self.devalue_conf
         else:

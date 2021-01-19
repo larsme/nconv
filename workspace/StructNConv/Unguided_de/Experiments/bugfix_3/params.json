@@ -28,7 +28,7 @@
     "devalue_pooled_confidence": true,
     "lidar_padding": 0,
     "crop_top": 0,
-    "num_epochs": 3,
+    "num_epochs": 5,
     "save_chkpt_each": 1,
     "save_out_imgs": false,
     "notes_to_self": "Unguided depth completion network based on depth with edge smoothness"

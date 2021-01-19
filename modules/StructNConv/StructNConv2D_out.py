@@ -29,6 +29,8 @@ class StructNConv2D_out(torch.nn.Module):
                 torch.nn.init.kaiming_uniform_(self.channel_weight)
         #self.unseen = torch.nn.Parameter(data=torch.Tensor(1, 1, 1, 1))
 
+    def print(self, s_list):
+        return s_list
             
     def enforce_limits(self):
         # Enforce positive weights

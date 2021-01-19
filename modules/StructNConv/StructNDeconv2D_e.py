@@ -41,11 +41,11 @@ class StructNDeconv2D_e(torch.nn.Module):
         # Init Parameters
         if self.init_method == 'x':  # Xavier
             if mirror_weights:
-               torch.nn.init.xavier_uniform_(self.spatial_weight0) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight1) + 1
-               torch.nn.init.xavier_uniform_(self.spatial_weight3) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight0) 
+               torch.nn.init.xavier_uniform_(self.spatial_weight1) 
+               torch.nn.init.xavier_uniform_(self.spatial_weight3) 
             else:
-               torch.nn.init.xavier_uniform_(self.spatial_weight) + 1
+               torch.nn.init.xavier_uniform_(self.spatial_weight) 
         else:  # elif self.init_method == 'k': # Kaiming
             if mirror_weights:
                torch.nn.init.kaiming_uniform_(self.spatial_weight0)
@@ -53,12 +53,6 @@ class StructNDeconv2D_e(torch.nn.Module):
                torch.nn.init.kaiming_uniform_(self.spatial_weight3)
             else:
                 torch.nn.init.kaiming_uniform_(self.spatial_weight)
-        if mirror_weights:
-            self.spatial_weight0.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight1.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-            self.spatial_weight3.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
-        else:
-            self.spatial_weight.data[:,:, self.kernel_size // 2, self.kernel_size // 2] = 1
 
             
     def enforce_limits(self):
@@ -70,8 +64,7 @@ class StructNDeconv2D_e(torch.nn.Module):
         else:
             self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
 
-
-    def forward(self, e, ce, target_shape):
+    def prepare_weights(self):
         if self.mirror_weights:
             spatial_weight = torch.cat((self.spatial_weight0,
                                              torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
@@ -79,8 +72,14 @@ class StructNDeconv2D_e(torch.nn.Module):
                                              torch.cat((self.spatial_weight3, self.spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
         else:
             spatial_weight = self.spatial_weight
-            channel_weight = self.channel_weight
+        ones = torch.ones((1, self.in_channels * 4, 3 * self.kernel_size - 2, 3 * self.kernel_size - 2), device=spatial_weight.device)
+        spatial_weight = spatial_weight / F.conv2d(ones, spatial_weight, stride=self.stride, padding=0, groups=self.in_channels * 4).view(self.in_channels * 4, 1,self.kernel_size,self.kernel_size)
                 
+        return spatial_weight
+
+    def forward(self, e, ce, target_shape):
+        spatial_weight = self.prepare_weights()
+
         shape = e.shape
         e, ce = e.view(shape[0],shape[1] * shape[2],shape[3], shape[4]), ce.view(shape[0],shape[1] * shape[2],shape[3], shape[4])
         
@@ -89,10 +88,8 @@ class StructNDeconv2D_e(torch.nn.Module):
 
         # Normalized Convolution along spatial dimensions
         nom = F.conv_transpose2d(ce * e, spatial_weight, groups=self.in_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding).squeeze(2)
-        denom = F.conv_transpose2d(ce, spatial_weight, groups=self.in_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding).squeeze(2)
-        cdenom = F.conv_transpose2d(torch.ones_like(ce), spatial_weight, groups=self.in_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding).squeeze(2)
-        e = nom / (denom + self.eps)
-        ce = denom / (cdenom + self.eps)
+        ce = F.conv_transpose2d(ce, spatial_weight, groups=self.in_channels * 4, stride=self.stride, padding=self.padding, dilation=self.dilation, output_padding=output_padding).squeeze(2)
+        e = nom / (ce + self.eps)
         
         shape = e.shape
         return e.view(shape[0],shape[1] // 4, 4,shape[2], shape[3]), ce.view(shape[0],shape[1] // 4, 4,shape[2], shape[3])
