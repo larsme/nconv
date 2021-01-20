@@ -31,18 +31,25 @@ class StructNConv2D_out(torch.nn.Module):
 
     def print(self, s_list):
         return s_list
-            
-    def enforce_limits(self):
-        # Enforce positive weights
+
+    def prepare_weights(self):
         if self.in_channels>1:
-            self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
+            channel_weight = F.softplus(self.channel_weight)
+        else:
+            channel_weight = None
+
+        return channel_weight
+    
+    def prep_eval(self):
+        return
 
     def forward(self, d, cd):
+        channel_weight = self.prepare_weights()
                 
         if self.in_channels>1:
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cd * d, self.channel_weight)
-            denom = F.conv2d(cd, self.channel_weight)
+            nom = F.conv2d(cd * d, channel_weight)
+            denom = F.conv2d(cd, channel_weight)
             d = nom / (denom + self.eps)
             cd = denom / (torch.sum(self.channel_weight) + self.eps)
 

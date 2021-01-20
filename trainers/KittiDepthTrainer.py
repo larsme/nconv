@@ -147,6 +147,7 @@ class KittiDepthTrainer(Trainer):
 
         self.net.train(False)
         self.net.print()
+        self.net.prep_eval()
         
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() and self.params['use_gpu'] else "cpu")
         
@@ -346,13 +347,17 @@ class KittiDepthTrainer(Trainer):
                     if self.input_rgb:
                         inputs_rgb = data[3].to(device)
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
+                        d, cd = self.net(d_0=sparse_depth, rgb=inputs_rgb)[:2]
                     else:
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                        d, cd = self.net(d_0 = sparse_depth)[:2]
 
                     # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(d, gt_depth, cd, self.epoch)
+                    if torch.isnan( loss):
+                        loss = d = cd = None
+                        d, cd = self.net(d_0=sparse_depth)[:2]
+                        
 
                     # backward + optimize only if in training phase
                     if s == 'train':
@@ -364,8 +369,6 @@ class KittiDepthTrainer(Trainer):
                     for param in self.net.parameters():
                         param.grad = None
 
-
-                    self.net.enforce_limits()
                     return loss.detach().item(), sparse_depth.detach().size(0)
 
                 loss, npoints = train_step()
@@ -401,6 +404,7 @@ class KittiDepthTrainer(Trainer):
                     print('Evaluating using initial parameters')
 
         self.net.train(False)
+        self.net.prep_eval()
 
 
         # AverageMeters for Loss
@@ -448,17 +452,17 @@ class KittiDepthTrainer(Trainer):
                 # Iterate over data.
                 for data in self.dataloaders[s]:
                     print('eval batch %d of %d' % (i, len(self.dataloaders[s])), end='\r')
-
+                    
                     sparse_depth = data[0].to(device)
                     gt_depth = data[1].to(device)
                     item_idxs = data[2]
                     if self.input_rgb:
                         inputs_rgb = data[3].to(device)
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float(), inputs_rgb)[:2]
+                        d, cd = self.net(d_0 =sparse_depth, rgb=inputs_rgb)[:2]
                     else:
                         t = time.time()
-                        d, cd = self.net(sparse_depth, (sparse_depth > 0).float())[:2]
+                        d, cd = self.net(d_0=sparse_depth)[:2]
                     elapsed = time.time() - t
 
                     # Calculate loss for valid pixel in the ground truth

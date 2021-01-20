@@ -22,7 +22,7 @@ class StructNMaxPool2D_e(torch.nn.Module):
         
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
                         
-    def enforce_limits(self):
+    def prep_eval(self):
         return
 
     def forward(self, d, cd, e, ce, *args):

@@ -32,40 +32,35 @@ class StructNDeconv2D(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size))
 
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(spatial_weight)
-        else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(spatial_weight)
-        
-        if mirror_weights:
-            self.true_spatial_weight = spatial_weight
-        else:
-            self.spatial_weight = spatial_weight
-            
-    def enforce_limits(self):
-        # Enforce positive weights
-        if self.mirror_weights:
-            self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
-        else:
-            self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
+            torch.nn.init.xavier_uniform_(self.spatial_weight)
+        elif self.init_method == 'k': # Kaiming
+            torch.nn.init.kaiming_uniform_(self.spatial_weight)
 
     def prepare_weights(self):
         if self.mirror_weights:
-            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+            spatial_weight = F.softplus(self.spatial_weight)
+            spatial_weight = torch.cat((spatial_weight, spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
         else:
-            spatial_weight = self.spatial_weight
+            spatial_weight = F.softplus(self.spatial_weight)
         ones = torch.ones((1, self.in_channels, 3*self.kernel_size-2, 3*self.kernel_size-2), device=spatial_weight.device)
         spatial_weight = spatial_weight / F.conv2d(ones, spatial_weight, stride=self.stride, padding=0, groups=self.in_channels).view(self.in_channels, 1,self.kernel_size,self.kernel_size)
 
         return spatial_weight
-
+    
+    def prep_eval(self):
+        self.weights = self.prepare_weights()
+        
     def forward(self, d, cd, target_shape):
-        spatial_weight = self.prepare_weights()
+        if self.training:
+            spatial_weight = self.prepare_weights()
+        else:
+            spatial_weight = self.weights
 
         shape = d.shape
         output_padding = (target_shape[2] - ((shape[2] - 1) * self.stride - 2 * self.padding + self.dilation * (self.kernel_size - 1) + 1),

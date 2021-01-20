@@ -19,7 +19,7 @@ class NearestNeighbourUpsample2(torch.nn.Module):
         self.stride = stride
         self.padding = padding
         
-    def enforce_limits(self):
+    def prep_eval(self):
         return
 
     def forward(self, d, cd):

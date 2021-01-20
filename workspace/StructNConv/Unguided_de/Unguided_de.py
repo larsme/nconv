@@ -6,6 +6,7 @@ __maintainer__ = "Abdelrahman Eldesokey"
 __email__ = "abdo.eldesokey@gmail.com"
 ########################################
 import torch
+import torch.nn.functional as F
 
 #from modules.StructNConv.s_prod_KernelChannels import s_prod_KernelChannels
 from modules.StructNConv.e_prod_KernelChannels3 import e_prod_KernelChannels3
@@ -109,18 +110,6 @@ class CNN(torch.nn.Module):
             self.nup_d = StructNDeconv2D(in_channels=num_channels, out_channels=num_channels, init_method=params['init_method'], mirror_weights=params['mirror_weights'],
                                                   kernel_size=3, stride=2, padding=1, dilation=1)
         self.outs = ['d', 'cd', 'e', 'ce']
-
-        self.enforce_limits()
-
-    def enforce_limits(self):
-        for nconv in self.nconv_d:
-            nconv.enforce_limits()
-        for nconv in self.nconv_e:
-            nconv.enforce_limits()
-        self.npool_d.enforce_limits()
-        self.nup_d.enforce_limits()
-        self.npool_e.enforce_limits()
-        self.nup_e.enforce_limits()
     
     def print(self):
         s = 'nconv_d\n'
@@ -144,10 +133,12 @@ class CNN(torch.nn.Module):
         s_list = []
         for i in range(4):
             title_rows.add(len(s_list))
-            s_list.append('spatial {0}\n'.format(['/','-','\\','|'][i]))
+            s_list.append('spatial {0}'.format(['/','-','\\','|'][i]))
             for j in range(5):
                 s_list.append('') 
                 
+        title_rows.add(len(s_list))
+        s_list.append('') 
         title_rows.add(len(s_list))
         s_list.append('channel_weights prev / - \\ | to  / - \\ |')
         for dir in range(4):
@@ -158,6 +149,8 @@ class CNN(torch.nn.Module):
             s_list.append('')
             
         title_rows.add(len(s_list))
+        s_list.append('')
+        title_rows.add(len(s_list))
         s_list.append('pow for prev / - \\ | per side')
         for dir in range(4):
             s_list.append('')
@@ -166,6 +159,8 @@ class CNN(torch.nn.Module):
         for dir in range(4):
             s_list.append('')
             
+        title_rows.add(len(s_list))
+        s_list.append('')            
         title_rows.add(len(s_list))
         s_list.append('w prop (prev, skip)')
         for dir in range(2):
@@ -183,11 +178,24 @@ class CNN(torch.nn.Module):
             s+= s_list[i]+'\n'
         print(s)
 
-
+        
+    def prep_eval(self):
+        for nconv in self.nconv_d:
+            nconv.prep_eval()
+        for nconv in self.nconv_e:
+            nconv.prep_eval()
+        self.npool_d.prep_eval()
+        self.nup_d.prep_eval()
+        self.npool_e.prep_eval()
+        self.nup_e.prep_eval()
     
-    def forward(self, d_0, cd_0, e_0=None, ce_0=None):
+    def forward(self, d_0, cd_0=None, e_0=None, ce_0=None):
+        
+
+        if cd_0 is None:
+            cd_0 = (d_0 > 0).float()
         if e_0 is None:
-            e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device)        
+            e_0 = ce_0 = torch.zeros(size=(d_0.shape[0], d_0.shape[1], 4, d_0.shape[2], d_0.shape[3]), device=d_0.device)  
 
         # Stage 0
         e_0, ce_0 = self.nconv_e[0](d_0, cd_0, e_0, ce_0)

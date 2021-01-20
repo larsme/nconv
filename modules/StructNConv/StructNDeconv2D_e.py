@@ -32,11 +32,11 @@ class StructNDeconv2D_e(torch.nn.Module):
 
         # Define Parameters
         if mirror_weights:
-            self.spatial_weight0 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
-            self.spatial_weight1 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
-            self.spatial_weight3 = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight0 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight1 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight3 = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            self.spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels * 4, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels * 4, 1, self.kernel_size, self.kernel_size))
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
@@ -46,7 +46,7 @@ class StructNDeconv2D_e(torch.nn.Module):
                torch.nn.init.xavier_uniform_(self.spatial_weight3) 
             else:
                torch.nn.init.xavier_uniform_(self.spatial_weight) 
-        else:  # elif self.init_method == 'k': # Kaiming
+        elif self.init_method == 'k': # Kaiming
             if mirror_weights:
                torch.nn.init.kaiming_uniform_(self.spatial_weight0)
                torch.nn.init.kaiming_uniform_(self.spatial_weight1)
@@ -54,31 +54,30 @@ class StructNDeconv2D_e(torch.nn.Module):
             else:
                 torch.nn.init.kaiming_uniform_(self.spatial_weight)
 
-            
-    def enforce_limits(self):
-        # Enforce positive weights
-        if self.mirror_weights:
-            self.spatial_weight0.data = F.softplus(self.spatial_weight0, beta=10)
-            self.spatial_weight1.data = F.softplus(self.spatial_weight1, beta=10)
-            self.spatial_weight3.data = F.softplus(self.spatial_weight3, beta=10)
-        else:
-            self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-
     def prepare_weights(self):
         if self.mirror_weights:
-            spatial_weight = torch.cat((self.spatial_weight0,
-                                             torch.cat((self.spatial_weight1, self.spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
-                                             self.spatial_weight0.flip(dims=(3,)),
-                                             torch.cat((self.spatial_weight3, self.spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
+            spatial_weight0 = F.softplus(self.spatial_weight0)
+            spatial_weight1 = F.softplus(self.spatial_weight1)
+            spatial_weight3 = F.softplus(self.spatial_weight3)
+            spatial_weight = torch.cat((spatial_weight0,
+                                             torch.cat((spatial_weight1, spatial_weight1[:,:,:,:-1].flip(dims=(3,))), dim=3),
+                                             spatial_weight0.flip(dims=(3,)),
+                                             torch.cat((spatial_weight3, spatial_weight3[:,:,:,:-1].flip(dims=(3,))), dim=3)), dim=0)
         else:
-            spatial_weight = self.spatial_weight
+            spatial_weight = F.softplus(self.spatial_weight)
         ones = torch.ones((1, self.in_channels * 4, 3 * self.kernel_size - 2, 3 * self.kernel_size - 2), device=spatial_weight.device)
         spatial_weight = spatial_weight / F.conv2d(ones, spatial_weight, stride=self.stride, padding=0, groups=self.in_channels * 4).view(self.in_channels * 4, 1,self.kernel_size,self.kernel_size)
                 
         return spatial_weight
-
+    
+    def prep_eval(self):
+        self.weights = self.prepare_weights()
+        
     def forward(self, e, ce, target_shape):
-        spatial_weight = self.prepare_weights()
+        if self.training:
+            spatial_weight = self.prepare_weights()
+        else:
+            spatial_weight = self.weights
 
         shape = e.shape
         e, ce = e.view(shape[0],shape[1] * shape[2],shape[3], shape[4]), ce.view(shape[0],shape[1] * shape[2],shape[3], shape[4])

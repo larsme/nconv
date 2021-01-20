@@ -33,59 +33,55 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         self.devalue_conf = 1 / self.stride / self.stride if devalue_pooled_confidence else 1
 
         # Define Parameters
-        self.w_s_from_d = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
-        self.w_prop = torch.nn.Parameter(data=torch.Tensor(1, self.in_channels, 1, 1))
+        self.w_pow = torch.nn.Parameter(data=torch.ones(1, self.in_channels, 1, 1))
+        self.w_prop = torch.nn.Parameter(data=torch.ones(1, self.in_channels, 1, 1))
         if self.in_channels > 1:
-            self.channel_weight = torch.nn.Parameter(data=torch.Tensor(self.out_channels, self.in_channels, 1, 1))
+            self.channel_weight = torch.nn.Parameter(data=torch.ones(self.out_channels, self.in_channels, 1, 1))
         if mirror_weights:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
+            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, (self.kernel_size + 1) // 2))
         else:
-            spatial_weight = torch.nn.Parameter(data=torch.Tensor(self.in_channels, 1, self.kernel_size, self.kernel_size))
+            self.spatial_weight = torch.nn.Parameter(data=torch.ones(self.in_channels, 1, self.kernel_size, self.kernel_size))
         
         # Init Parameters
         if self.init_method == 'x':  # Xavier
-            torch.nn.init.xavier_uniform_(self.w_s_from_d)
+            torch.nn.init.xavier_uniform_(self.w_pow)
             torch.nn.init.xavier_uniform_(self.w_prop)
             if self.in_channels > 1:
                 torch.nn.init.xavier_uniform_(self.channel_weight) 
-            torch.nn.init.xavier_uniform_(spatial_weight) 
-        else:  # elif self.init_method == 'k': # Kaiming
-            torch.nn.init.kaiming_uniform_(self.w_s_from_d)
+            torch.nn.init.xavier_uniform_(self.spatial_weight) 
+        elif self.init_method == 'k': # Kaiming
+            torch.nn.init.kaiming_uniform_(self.w_pow)
             torch.nn.init.kaiming_uniform_(self.w_prop)
             if self.in_channels > 1:
                 torch.nn.init.kaiming_uniform_(self.channel_weight)
-            torch.nn.init.kaiming_uniform_(spatial_weight)
-        
-        if mirror_weights:
-            self.true_spatial_weight = spatial_weight
-        else:
-            self.spatial_weight = spatial_weight
-
-            
-    def enforce_limits(self):
-        # Enforce positive weights
-        if self.mirror_weights:
-            self.true_spatial_weight.data = F.softplus(self.true_spatial_weight, beta=10)
-        else:
-            self.spatial_weight.data = F.softplus(self.spatial_weight, beta=10)
-        if self.in_channels > 1:
-            self.channel_weight.data = F.softplus(self.channel_weight, beta=10)
+            torch.nn.init.kaiming_uniform_(self.spatial_weight)
 
     def prepare_weights(self):
         if self.mirror_weights:
-            spatial_weight = torch.cat((self.true_spatial_weight, self.true_spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
+            spatial_weight = F.softplus(self.spatial_weight)
+            spatial_weight = torch.cat((spatial_weight, spatial_weight[:,:,:,:-1].flip(dims=(3,))), dim=3)
         else:
-            spatial_weight = self.spatial_weight
+            spatial_weight = F.softplus(self.spatial_weight)
         spatial_weight = spatial_weight / spatial_weight.sum(dim=[2,3], keepdim=True)
         w_prop = torch.sigmoid(self.w_prop)
+        w_pow = F.softplus(self.w_pow)
 
         if self.in_channels > 1:
-            channel_weight = self.channel_weight / self.channel_weight.sum(dim=1, keepdim=True)
+            channel_weight = F.softplus(self.channel_weight)
+            channel_weight = channel_weight / channel_weight.sum(dim=1, keepdim=True)
+        else:
+            channel_weight = None
 
-        return spatial_weight, channel_weight, w_prop
-
+        return spatial_weight, channel_weight, w_prop, w_pow
+    
+    def prep_eval(self):
+        self.weights = self.prepare_weights()
+        
     def forward(self, d, cd, s, cs):
-        spatial_weight, channel_weight, w_prop = self.prepare_weights()
+        if self.training:
+            spatial_weight, channel_weight, w_prop, w_pow = self.prepare_weights()
+        else:
+            spatial_weight, channel_weight, w_prop, w_pow = self.weights
 
         # calculate smoothness from depths
         _, j_max = F.max_pool2d(d * cd, kernel_size=self.kernel_size, stride=self.stride,
@@ -95,7 +91,7 @@ class StructNConv2D_s_with_d(torch.nn.Module):
 
         min_div_max = retrieve_indices(d, j_min) / (retrieve_indices(d, j_max) + self.eps)
 
-        s_from_d = min_div_max.pow(self.w_s_from_d)
+        s_from_d = min_div_max.pow(w_pow)
         cs_from_d = retrieve_indices(cd, j_max) * retrieve_indices(cd, j_min)
 
         if self.stride == 1:
@@ -114,8 +110,8 @@ class StructNConv2D_s_with_d(torch.nn.Module):
         
         if self.in_channels > 1:
             # Normalized Convolution along channel dimensions
-            nom = F.conv2d(cs * s, self.channel_weight, groups=self.groups)
-            cs = F.conv2d(cs, self.channel_weight, groups=self.groups)
+            nom = F.conv2d(cs * s, channel_weight, groups=self.groups)
+            cs = F.conv2d(cs, channel_weight, groups=self.groups)
             s = nom / (cs + self.eps)
         elif self.out_channels > 1:
             s, cs = s.expand(-1, self.out_channels,-1,-1), cs.expand(-1, self.out_channels,-1,-1)
