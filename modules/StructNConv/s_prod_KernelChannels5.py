@@ -22,14 +22,14 @@ class s_prod_KernelChannels5(torch.nn.Module):
         s_roll = torch.nn.functional.unfold(s, 5,1,2,1).view(s.shape[0], s.shape[1], 25, s.shape[2], s.shape[3])
         cs_roll = torch.nn.functional.unfold(s, 5,1,2,1).view(s.shape[0], s.shape[1], 25, s.shape[2], s.shape[3])
 
-        s11, c11 = s * s_roll[:, :, 1 * 5 + 1, :, :], cs * cs_roll[:, :, 1 * 5 + 1, :, :]
-        s12, c12 = s * s_roll[:, :, 1 * 5 + 2, :, :], cs * cs_roll[:, :, 1 * 5 + 2, :, :]
-        s13, c13 = s * s_roll[:, :, 1 * 5 + 3, :, :], cs * cs_roll[:, :, 1 * 5 + 3, :, :]
-        s21, c21 = s * s_roll[:, :, 2 * 5 + 1, :, :], cs * cs_roll[:, :, 2 * 5 + 1, :, :]
-        s23, c23 = s * s_roll[:, :, 2 * 5 + 3, :, :], cs * cs_roll[:, :, 2 * 5 + 3, :, :]
-        s31, c31 = s * s_roll[:, :, 3 * 5 + 1, :, :], cs * cs_roll[:, :, 3 * 5 + 1, :, :]
-        s32, c32 = s * s_roll[:, :, 3 * 5 + 2, :, :], cs * cs_roll[:, :, 3 * 5 + 2, :, :]
-        s33, c33 = s * s_roll[:, :, 3 * 5 + 3, :, :], cs * cs_roll[:, :, 3 * 5 + 3, :, :]
+        s11, c11 = s * s_roll[:, :, 1 * 5 + 1, :, :], cs_roll[:, :, 1 * 5 + 1, :, :]
+        s12, c12 = s * s_roll[:, :, 1 * 5 + 2, :, :], cs_roll[:, :, 1 * 5 + 2, :, :]
+        s13, c13 = s * s_roll[:, :, 1 * 5 + 3, :, :], cs_roll[:, :, 1 * 5 + 3, :, :]
+        s21, c21 = s * s_roll[:, :, 2 * 5 + 1, :, :], cs_roll[:, :, 2 * 5 + 1, :, :]
+        s23, c23 = s * s_roll[:, :, 2 * 5 + 3, :, :], cs_roll[:, :, 2 * 5 + 3, :, :]
+        s31, c31 = s * s_roll[:, :, 3 * 5 + 1, :, :], cs_roll[:, :, 3 * 5 + 1, :, :]
+        s32, c32 = s * s_roll[:, :, 3 * 5 + 2, :, :], cs_roll[:, :, 3 * 5 + 2, :, :]
+        s33, c33 = s * s_roll[:, :, 3 * 5 + 3, :, :], cs_roll[:, :, 3 * 5 + 3, :, :]
         
         s00 = s11 * s_roll[:, :, 0 * 5 + 0, :, :]
         s04 = s13 * s_roll[:, :, 0 * 5 + 4, :, :]
